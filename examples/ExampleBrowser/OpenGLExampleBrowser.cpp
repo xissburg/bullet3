@@ -186,6 +186,12 @@ void MyKeyboardCallback(int key, int state)
 
 	//b3Printf("key=%d, state=%d", key, state);
 	bool handled = false;
+    
+    if (!handled && sCurrentDemo)
+    {
+        handled = sCurrentDemo->keyboardCallback(key,state);
+    }
+    
 	if (renderGui)
 	{
 		if (gui2 && !handled )
@@ -193,14 +199,6 @@ void MyKeyboardCallback(int key, int state)
 			handled = gui2->keyboardCallback(key, state);
 		}
 	}
-	
-	if (!handled && sCurrentDemo)
-	{
-		handled = sCurrentDemo->keyboardCallback(key,state);
-	}
-
-	
-	
 
 	//checkout: is it desired to ignore keys, if the demo already handles them?
 	//if (handled)

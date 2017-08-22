@@ -1,5 +1,9 @@
 /bin
 /build3/gmake
 /build_cmake/
+build/
+xcode/
+xcode4/
+xcode4ios/
 
 *.pyc
