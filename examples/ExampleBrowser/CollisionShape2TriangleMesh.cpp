@@ -132,6 +132,12 @@ void CollisionShape2TriangleMesh(btCollisionShape* collisionShape, const btTrans
 			
 			break;
 		}
+        case SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE:
+        {
+            btScaledBvhTriangleMeshShape* trimesh = (btScaledBvhTriangleMeshShape*) collisionShape;
+            CollisionShape2TriangleMesh(trimesh->getChildShape(), parentTransform, vertexPositions, vertexNormals, indicesOut);
+            break;
+        }
 		default:
 		{
 			if (collisionShape->isConvex())
