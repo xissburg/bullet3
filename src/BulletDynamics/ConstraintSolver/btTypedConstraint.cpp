@@ -51,7 +51,8 @@ m_rbA(rbA),
 m_rbB(rbB),
 m_appliedImpulse(btScalar(0.)),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
-m_jointFeedback(0)
+m_jointFeedback(0),
+m_useSplitSpin(false)
 {
 }
 

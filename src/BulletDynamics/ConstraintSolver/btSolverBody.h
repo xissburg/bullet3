@@ -122,6 +122,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btScalar		m_spin;
 	btVector3		m_externalForceImpulse;
 	btVector3		m_externalTorqueImpulse;
+	bool 			m_useSplitSpin;
 
 	btRigidBody*	m_originalBody;
 	void	setWorldTransform(const btTransform& worldTransform)

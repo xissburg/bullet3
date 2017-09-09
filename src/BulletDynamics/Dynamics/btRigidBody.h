@@ -69,6 +69,8 @@ class btRigidBody  : public btCollisionObject
 	btScalar		m_inverseMass;
 	btVector3		m_linearFactor;
 
+	bool			m_useSplitSpin;
+
 	btVector3		m_gravity;
 	btVector3		m_gravity_acceleration;
 	btVector3		m_invInertiaLocal;
@@ -550,8 +552,15 @@ public:
 		return m_rigidbodyFlags;
 	}
 
+	bool useSplitSpin() const
+	{
+		return m_useSplitSpin;
+	}
 
-
+	void setUseSplitSpin(bool useSplitSpin)
+	{
+		m_useSplitSpin = useSplitSpin;
+	}
 
 	///perform implicit force computation in world space
 	btVector3 computeGyroscopicImpulseImplicit_World(btScalar dt) const;

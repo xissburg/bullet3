@@ -54,6 +54,8 @@ void	btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0)),
     setDamping(constructionInfo.m_linearDamping, constructionInfo.m_angularDamping);
 
+	m_useSplitSpin = false;
+
 	m_linearSleepingThreshold = constructionInfo.m_linearSleepingThreshold;
 	m_angularSleepingThreshold = constructionInfo.m_angularSleepingThreshold;
 	m_optionalMotionState = constructionInfo.m_motionState;
