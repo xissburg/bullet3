@@ -4,8 +4,8 @@ Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet/
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose, 
-including commercial applications, and to alter it and redistribute it freely, 
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
@@ -39,7 +39,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 
 	btVector3		m_angularComponentA;
 	btVector3		m_angularComponentB;
-	
+
 	mutable btSimdScalar	m_appliedPushImpulse;
 	mutable btSimdScalar	m_appliedImpulse;
 
@@ -47,7 +47,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 	btScalar	m_jacDiagABInv;
 	btScalar		m_rhs;
 	btScalar		m_cfm;
-	
+
     btScalar		m_lowerLimit;
 	btScalar		m_upperLimit;
 	btScalar		m_rhsPenetration;
@@ -63,18 +63,17 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 	int m_solverBodyIdA;
 	int m_solverBodyIdB;
 
-    
+
 	enum		btSolverConstraintType
 	{
 		BT_SOLVER_CONTACT_1D = 0,
 		BT_SOLVER_FRICTION_1D
 	};
+
+	bool m_useSplitSpin;
 };
 
 typedef btAlignedObjectArray<btSolverConstraint>	btConstraintArray;
 
 
 #endif //BT_SOLVER_CONSTRAINT_H
-
-
-

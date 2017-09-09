@@ -4,8 +4,8 @@ Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet/
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose, 
-including commercial applications, and to alter it and redistribute it freely, 
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
@@ -45,6 +45,7 @@ void	btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 
 	m_linearVelocity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 	m_angularVelocity.setValue(btScalar(0.),btScalar(0.),btScalar(0.));
+	m_spin = 0;
 	m_angularFactor.setValue(1,1,1);
 	m_linearFactor.setValue(1,1,1);
 	m_gravity.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
@@ -75,17 +76,17 @@ void	btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_interpolationWorldTransform = m_worldTransform;
 	m_interpolationLinearVelocity.setValue(0,0,0);
 	m_interpolationAngularVelocity.setValue(0,0,0);
-	
+
 	//moved to btCollisionObject
 	m_friction = constructionInfo.m_friction;
 	m_rollingFriction = constructionInfo.m_rollingFriction;
     m_spinningFriction = constructionInfo.m_spinningFriction;
-    
+
 	m_restitution = constructionInfo.m_restitution;
 
 	setCollisionShape( constructionInfo.m_collisionShape );
 	m_debugBodyId = uniqueId++;
-	
+
 	setMassProps(constructionInfo.m_mass, constructionInfo.m_localInertia);
 	updateInertiaTensor();
 
@@ -98,12 +99,12 @@ void	btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_pushVelocity.setZero();
 	m_turnVelocity.setZero();
 
-	
+
 
 }
 
 
-void btRigidBody::predictIntegratedTransform(btScalar timeStep,btTransform& predictedTransform) 
+void btRigidBody::predictIntegratedTransform(btScalar timeStep,btTransform& predictedTransform)
 {
 	btTransformUtil::integrateTransform(m_worldTransform,m_linearVelocity,m_angularVelocity,timeStep,predictedTransform);
 }
@@ -117,7 +118,7 @@ void			btRigidBody::saveKinematicState(btScalar timeStep)
 		if (getMotionState())
 			getMotionState()->getWorldTransform(m_worldTransform);
 		btVector3 linVel,angVel;
-		
+
 		btTransformUtil::calculateVelocity(m_interpolationWorldTransform,m_worldTransform,timeStep,m_linearVelocity,m_angularVelocity);
 		m_interpolationLinearVelocity = m_linearVelocity;
 		m_interpolationAngularVelocity = m_angularVelocity;
@@ -125,7 +126,7 @@ void			btRigidBody::saveKinematicState(btScalar timeStep)
 		//printf("angular = %f %f %f\n",m_angularVelocity.getX(),m_angularVelocity.getY(),m_angularVelocity.getZ());
 	}
 }
-	
+
 void	btRigidBody::getAabb(btVector3& aabbMin,btVector3& aabbMax) const
 {
 	getCollisionShape()->getAabb(m_worldTransform,aabbMin,aabbMax);
@@ -134,7 +135,7 @@ void	btRigidBody::getAabb(btVector3& aabbMin,btVector3& aabbMax) const
 
 
 
-void btRigidBody::setGravity(const btVector3& acceleration) 
+void btRigidBody::setGravity(const btVector3& acceleration)
 {
 	if (m_inverseMass != btScalar(0.0))
 	{
@@ -182,7 +183,7 @@ void			btRigidBody::applyDamping(btScalar timeStep)
 			m_angularVelocity *= m_additionalDampingFactor;
 			m_linearVelocity *= m_additionalDampingFactor;
 		}
-	
+
 
 		btScalar speed = m_linearVelocity.length();
 		if (speed < m_linearDamping)
@@ -219,8 +220,8 @@ void btRigidBody::applyGravity()
 {
 	if (isStaticOrKinematicObject())
 		return;
-	
-	applyCentralForce(m_gravity);	
+
+	applyCentralForce(m_gravity);
 
 }
 
@@ -228,7 +229,7 @@ void btRigidBody::proceedToTransform(const btTransform& newTrans)
 {
 	setCenterOfMassTransform( newTrans );
 }
-	
+
 
 void btRigidBody::setMassProps(btScalar mass, const btVector3& inertia)
 {
@@ -244,7 +245,7 @@ void btRigidBody::setMassProps(btScalar mass, const btVector3& inertia)
 
 	//Fg = m * a
 	m_gravity = mass * m_gravity_acceleration;
-	
+
 	m_invInertiaLocal.setValue(inertia.x() != btScalar(0.0) ? btScalar(1.0) / inertia.x(): btScalar(0.0),
 				   inertia.y() != btScalar(0.0) ? btScalar(1.0) / inertia.y(): btScalar(0.0),
 				   inertia.z() != btScalar(0.0) ? btScalar(1.0) / inertia.z(): btScalar(0.0));
@@ -252,8 +253,8 @@ void btRigidBody::setMassProps(btScalar mass, const btVector3& inertia)
 	m_invMass = m_linearFactor*m_inverseMass;
 }
 
-	
-void btRigidBody::updateInertiaTensor() 
+
+void btRigidBody::updateInertiaTensor()
 {
 	m_invInertiaTensorWorld = m_worldTransform.getBasis().scaled(m_invInertiaLocal) * m_worldTransform.getBasis().transpose();
 }
@@ -307,36 +308,36 @@ btVector3 btRigidBody::computeGyroscopicForceExplicit(btScalar maxGyroscopicForc
 
 
 btVector3 btRigidBody::computeGyroscopicImpulseImplicit_Body(btScalar step) const
-{	
+{
 	btVector3 idl = getLocalInertia();
 	btVector3 omega1 = getAngularVelocity();
 	btQuaternion q = getWorldTransform().getRotation();
-	
+
 	// Convert to body coordinates
 	btVector3 omegab = quatRotate(q.inverse(), omega1);
 	btMatrix3x3 Ib;
 	Ib.setValue(idl.x(),0,0,
 				0,idl.y(),0,
 				0,0,idl.z());
-	
+
 	btVector3 ibo = Ib*omegab;
 
 	// Residual vector
 	btVector3 f = step * omegab.cross(ibo);
-	
+
 	btMatrix3x3 skew0;
 	omegab.getSkewSymmetricMatrix(&skew0[0], &skew0[1], &skew0[2]);
 	btVector3 om = Ib*omegab;
 	btMatrix3x3 skew1;
 	om.getSkewSymmetricMatrix(&skew1[0],&skew1[1],&skew1[2]);
-	
+
 	// Jacobian
 	btMatrix3x3 J = Ib +  (skew0*Ib - skew1)*step;
-	
+
 //	btMatrix3x3 Jinv = J.inverse();
 //	btVector3 omega_div = Jinv*f;
 	btVector3 omega_div = J.solve33(f);
-	
+
 	// Single Newton-Raphson update
 	omegab = omegab - omega_div;//Solve33(J, f);
 	// Back to world coordinates
@@ -361,7 +362,7 @@ btVector3 btRigidBody::computeGyroscopicImpulseImplicit_World(btScalar step) con
 		m_worldTransform.getBasis().transpose();
 
 	// use newtons method to find implicit solution for new angular velocity (w')
-	// f(w') = -(T*step + Iw) + Iw' + w' + w'xIw'*step = 0 
+	// f(w') = -(T*step + Iw) + Iw' + w' + w'xIw'*step = 0
 	// df/dw' = I + 1xIw'*step + w'xI*step
 
 	btVector3 w1 = w0;
@@ -384,7 +385,7 @@ btVector3 btRigidBody::computeGyroscopicImpulseImplicit_World(btScalar step) con
 }
 
 
-void btRigidBody::integrateVelocities(btScalar step) 
+void btRigidBody::integrateVelocities(btScalar step)
 {
 	if (isStaticOrKinematicObject())
 		return;
@@ -393,7 +394,7 @@ void btRigidBody::integrateVelocities(btScalar step)
 	m_angularVelocity += m_invInertiaTensorWorld * m_totalTorque * step;
 
 #define MAX_ANGVEL SIMD_HALF_PI
-	/// clamp angular velocity. collision calculations will fail on higher angular velocities	
+	/// clamp angular velocity. collision calculations will fail on higher angular velocities
 	btScalar angvel = m_angularVelocity.length();
 	if (angvel*step > MAX_ANGVEL)
 	{
@@ -408,8 +409,8 @@ btQuaternion btRigidBody::getOrientation() const
 		m_worldTransform.getBasis().getRotation(orn);
 		return orn;
 }
-	
-	
+
+
 void btRigidBody::setCenterOfMassTransform(const btTransform& xform)
 {
 
@@ -450,7 +451,7 @@ void btRigidBody::addConstraintRef(btTypedConstraint* c)
 		{
 			colObjB->setIgnoreCollisionCheck(colObjA, true);
 		}
-	} 
+	}
 }
 
 void btRigidBody::removeConstraintRef(btTypedConstraint* c)
@@ -523,5 +524,3 @@ void btRigidBody::serializeSingleObject(class btSerializer* serializer) const
 	const char* structType = serialize(chunk->m_oldPtr, serializer);
 	serializer->finalizeChunk(chunk,structType,BT_RIGIDBODY_CODE,(void*)this);
 }
-
-

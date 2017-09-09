@@ -4,8 +4,8 @@ Copyright (c) 2003-2006 Erwin Coumans  http://continuousphysics.com/Bullet/
 
 This software is provided 'as-is', without any express or implied warranty.
 In no event will the authors be held liable for any damages arising from the use of this software.
-Permission is granted to anyone to use this software for any purpose, 
-including commercial applications, and to alter it and redistribute it freely, 
+Permission is granted to anyone to use this software for any purpose,
+including commercial applications, and to alter it and redistribute it freely,
 subject to the following restrictions:
 
 1. The origin of this software must not be misrepresented; you must not claim that you wrote the original software. If you use this software in a product, an acknowledgment in the product documentation would be appreciated but is not required.
@@ -69,32 +69,32 @@ struct	btSimdScalar
 		m_vec128 = v128;
 	}
 
-	SIMD_FORCE_INLINE	operator       __m128()       
-	{ 
-		return m_vec128; 
+	SIMD_FORCE_INLINE	operator       __m128()
+	{
+		return m_vec128;
 	}
-	SIMD_FORCE_INLINE	operator const __m128() const 
-	{ 
-		return m_vec128; 
+	SIMD_FORCE_INLINE	operator const __m128() const
+	{
+		return m_vec128;
 	}
-	
-	SIMD_FORCE_INLINE	operator float() const 
-	{ 
-		return m_floats[0]; 
+
+	SIMD_FORCE_INLINE	operator float() const
+	{
+		return m_floats[0];
 	}
 
 };
 
 ///@brief Return the elementwise product of two btSimdScalar
-SIMD_FORCE_INLINE btSimdScalar 
-operator*(const btSimdScalar& v1, const btSimdScalar& v2) 
+SIMD_FORCE_INLINE btSimdScalar
+operator*(const btSimdScalar& v1, const btSimdScalar& v2)
 {
 	return btSimdScalar(_mm_mul_ps(v1.get128(),v2.get128()));
 }
 
 ///@brief Return the elementwise product of two btSimdScalar
-SIMD_FORCE_INLINE btSimdScalar 
-operator+(const btSimdScalar& v1, const btSimdScalar& v2) 
+SIMD_FORCE_INLINE btSimdScalar
+operator+(const btSimdScalar& v1, const btSimdScalar& v2)
 {
 	return btSimdScalar(_mm_add_ps(v1.get128(),v2.get128()));
 }
@@ -111,6 +111,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btTransform		m_worldTransform;
 	btVector3		m_deltaLinearVelocity;
 	btVector3		m_deltaAngularVelocity;
+	btScalar		m_deltaSpin;
 	btVector3		m_angularFactor;
 	btVector3		m_linearFactor;
 	btVector3		m_invMass;
@@ -118,6 +119,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btVector3		m_turnVelocity;
 	btVector3		m_linearVelocity;
 	btVector3		m_angularVelocity;
+	btScalar		m_spin;
 	btVector3		m_externalForceImpulse;
 	btVector3		m_externalTorqueImpulse;
 
@@ -131,13 +133,22 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	{
 		return m_worldTransform;
 	}
-	
-	
+
+
 
 	SIMD_FORCE_INLINE void	getVelocityInLocalPointNoDelta(const btVector3& rel_pos, btVector3& velocity ) const
 	{
 		if (m_originalBody)
 			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity+m_externalTorqueImpulse).cross(rel_pos);
+		else
+			velocity.setValue(0,0,0);
+	}
+
+
+	SIMD_FORCE_INLINE void	getVelocityInLocalPointNoDeltaWithSpin(const btVector3& rel_pos, btVector3& velocity ) const
+	{
+		if (m_originalBody)
+			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity + m_worldTransform.getBasis().getColumn(0)*m_spin + m_externalTorqueImpulse).cross(rel_pos);
 		else
 			velocity.setValue(0,0,0);
 	}
@@ -191,12 +202,12 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 		return m_deltaAngularVelocity;
 	}
 
-	const btVector3& getPushVelocity() const 
+	const btVector3& getPushVelocity() const
 	{
 		return m_pushVelocity;
 	}
 
-	const btVector3& getTurnVelocity() const 
+	const btVector3& getTurnVelocity() const
 	{
 		return m_turnVelocity;
 	}
@@ -204,7 +215,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 
 	////////////////////////////////////////////////
 	///some internal methods, don't use them
-		
+
 	btVector3& internalGetDeltaLinearVelocity()
 	{
 		return m_deltaLinearVelocity;
@@ -213,6 +224,11 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btVector3& internalGetDeltaAngularVelocity()
 	{
 		return m_deltaAngularVelocity;
+	}
+
+	btVector3 internalGetDeltaAngularVelocityWithSpin()
+	{
+		return m_deltaAngularVelocity + m_worldTransform.getBasis().getColumn(0) * m_deltaSpin;
 	}
 
 	const btVector3& internalGetAngularFactor() const
@@ -229,7 +245,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	{
 		m_invMass = invMass;
 	}
-	
+
 	btVector3& internalGetPushVelocity()
 	{
 		return m_pushVelocity;
@@ -260,9 +276,24 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 			m_deltaAngularVelocity += angularComponent*(impulseMagnitude*m_angularFactor);
 		}
 	}
-		
-	
-	
+
+	SIMD_FORCE_INLINE void internalApplyImpulseWithSpinSplit(const btVector3& linearComponent, const btVector3& angularComponent,const btScalar impulseMagnitude)
+	{
+		if (m_originalBody)
+		{
+			m_deltaLinearVelocity += linearComponent*impulseMagnitude*m_linearFactor;
+
+			btVector3 angularImpulse = angularComponent*(impulseMagnitude*m_angularFactor);
+
+			// remove any impulse that'd cause the body to spin in its local x axis
+			btVector3 wheelX = m_worldTransform.getBasis().getColumn(0);
+			btScalar spinImpulse = angularImpulse.dot(wheelX);
+			m_deltaSpin += spinImpulse;
+
+			angularImpulse -= wheelX * spinImpulse;
+			m_deltaAngularVelocity += angularImpulse;
+		}
+	}
 
 	void	writebackVelocity()
 	{
@@ -270,7 +301,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 		{
 			m_linearVelocity +=m_deltaLinearVelocity;
 			m_angularVelocity += m_deltaAngularVelocity;
-			
+			m_spin += m_deltaSpin;
 			//m_originalBody->setCompanionId(-1);
 		}
 	}
@@ -283,7 +314,8 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 		{
 			m_linearVelocity += m_deltaLinearVelocity;
 			m_angularVelocity += m_deltaAngularVelocity;
-			
+			m_spin += m_deltaSpin;
+
 			//correct the position/orientation based on push/turn recovery
 			btTransform newTransform;
 			if (m_pushVelocity[0]!=0.f || m_pushVelocity[1]!=0 || m_pushVelocity[2]!=0 || m_turnVelocity[0]!=0.f || m_turnVelocity[1]!=0 || m_turnVelocity[2]!=0)
@@ -296,11 +328,12 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 			//m_originalBody->setCompanionId(-1);
 		}
 	}
-	
 
+	btVector3 getAngularVelocityWithSpin()
+	{
+		return m_angularVelocity + m_worldTransform.getBasis().getColumn(0) * m_spin;
+	}
 
 };
 
 #endif //BT_SOLVER_BODY_H
-
-
