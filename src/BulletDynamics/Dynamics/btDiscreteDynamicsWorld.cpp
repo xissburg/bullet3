@@ -361,12 +361,18 @@ void	btDiscreteDynamicsWorld::synchronizeSingleMotionState(btRigidBody* body)
 		///@todo: add 'dirty' flag
 		//if (body->getActivationState() != ISLAND_SLEEPING)
 		{
+			btScalar timeStep = (m_latencyMotionStateInterpolation && m_fixedTimeStep) ? m_localTime - m_fixedTimeStep : m_localTime*body->getHitFraction();
 			btTransform interpolatedTransform;
 			btTransformUtil::integrateTransform(body->getInterpolationWorldTransform(),
 				body->getInterpolationLinearVelocity(),body->getInterpolationAngularVelocity(),
-				(m_latencyMotionStateInterpolation && m_fixedTimeStep) ? m_localTime - m_fixedTimeStep : m_localTime*body->getHitFraction(),
-				interpolatedTransform);
+				timeStep, interpolatedTransform);
 			body->getMotionState()->setWorldTransform(interpolatedTransform);
+
+			if (body->useSplitSpin()) {
+				btScalar angle = body->getSpinAngle() + timeStep * body->getSpin();
+				angle = btNormalizeAngle(angle);
+				body->getMotionState()->setSpinAngle(angle);
+			}
 		}
 	}
 }
@@ -658,7 +664,7 @@ void	btDiscreteDynamicsWorld::addConstraint(btTypedConstraint* constraint,bool d
 	m_constraints.push_back(constraint);
     //Make sure the two bodies of a type constraint are different (possibly add this to the btTypedConstraint constructor?)
     btAssert(&constraint->getRigidBodyA()!=&constraint->getRigidBodyB());
-    
+
 	if (disableCollisionsBetweenLinkedBodies)
 	{
 		constraint->getRigidBodyA().addConstraintRef(constraint);
@@ -1084,8 +1090,8 @@ void btDiscreteDynamicsWorld::integrateTransformsInternal( btRigidBody** bodies,
 			}
 
 
-			body->proceedToTransform( predictedTrans);
-
+			body->proceedToTransform(predictedTrans);
+			body->integrateSpin(timeStep);
 		}
 
 	}
@@ -1535,4 +1541,3 @@ void	btDiscreteDynamicsWorld::serialize(btSerializer* serializer)
 
 	serializer->finishSerialization();
 }
-

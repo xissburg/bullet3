@@ -70,6 +70,7 @@ class btRigidBody  : public btCollisionObject
 	btVector3		m_linearFactor;
 
 	bool			m_useSplitSpin;
+	btScalar		m_spinAngle;
 
 	btVector3		m_gravity;
 	btVector3		m_gravity_acceleration;
@@ -371,6 +372,19 @@ public:
 	const btScalar    getSpin() const {
 		return m_spin;
 	}
+	btMatrix3x3 getBasisWithSpin() const {
+		btVector3 column0 = m_worldTransform.getBasis().getColumn(0);
+		btQuaternion q(column0, m_spinAngle);
+		btVector3 column1 = quatRotate(q, m_worldTransform.getBasis().getColumn(1));
+		btVector3 column2 = quatRotate(q, m_worldTransform.getBasis().getColumn(2));
+		btMatrix3x3 basis(column0[0], column1[0], column2[0],
+						  column0[1], column1[1], column2[1],
+					  	  column0[2], column1[2], column2[2]);
+        return basis;
+	}
+	btTransform getWorldTransformWithSpin() const {
+		return btTransform(getBasisWithSpin(), m_worldTransform.getOrigin());
+	}
 
 	btVector3 getAngularVelocityWithSpin() const {
 		return m_angularVelocity + m_worldTransform.getBasis().getColumn(0) * m_spin;
@@ -391,6 +405,15 @@ public:
 	inline void setSpin(btScalar spin)
 	{
 		m_spin = spin;
+	}
+
+	inline void integrateSpin(btScalar timeStep)
+	{
+		m_spinAngle = btNormalizeAngle(m_spinAngle + m_spin * timeStep);
+	}
+
+	inline btScalar getSpinAngle() {
+		return m_spinAngle;
 	}
 
 	btVector3 getVelocityInLocalPoint(const btVector3& rel_pos) const
