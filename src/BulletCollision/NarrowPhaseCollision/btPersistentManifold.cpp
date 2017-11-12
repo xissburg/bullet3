@@ -196,13 +196,22 @@ int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
 	{
 		const btManifoldPoint &mp = m_pointCache[i];
 
-		btVector3 diffA =  mp.m_localPointA- newPoint.m_localPointA;
-		const btScalar distToManiPoint = diffA.dot(diffA);
-		if( distToManiPoint < shortestDist )
+		btVector3 diffA =  mp.m_localPointA - newPoint.m_localPointA;
+		const btScalar distToManiPointA = diffA.dot(diffA);
+        
+        btVector3 diffB =  mp.m_localPointB - newPoint.m_localPointB;
+        const btScalar distToManiPointB = diffB.dot(diffB);
+        
+		if (distToManiPointA < shortestDist)
 		{
-			shortestDist = distToManiPoint;
+			shortestDist = distToManiPointA;
 			nearestPoint = i;
 		}
+        else if (distToManiPointB < shortestDist) 
+		{
+            shortestDist = distToManiPointB;
+            nearestPoint = i;
+        }
 	}
 	return nearestPoint;
 }
@@ -301,8 +310,3 @@ void btPersistentManifold::refreshContactPoints(const btTransform& trA,const btT
 	DebugPersistency();
 #endif //
 }
-
-
-
-
-
