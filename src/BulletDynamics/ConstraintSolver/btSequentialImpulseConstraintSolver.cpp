@@ -769,13 +769,32 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 	}
 
 	{
+		btVector3 angularVelocityA(0,0,0);
+		btVector3 angularVelocityB(0,0,0);
 
+		if (body0) {
+			if (solverBodyA.m_useSplitSpin) {
+				angularVelocityA = solverBodyA.getAngularVelocityWithSpin();
+			}
+			else {
+				angularVelocityA = solverBodyA.m_angularVelocity;
+			}
+		}
+
+		if (body1) {
+			if (solverBodyB.m_useSplitSpin) {
+				angularVelocityB = solverBodyB.getAngularVelocityWithSpin();
+			}
+			else {
+				angularVelocityB = solverBodyB.m_angularVelocity;
+			}
+		}
 
 		btScalar rel_vel;
 		btScalar vel1Dotn = solverConstraint.m_contactNormal1.dot(body0?solverBodyA.m_linearVelocity+solverBodyA.m_externalForceImpulse:btVector3(0,0,0))
-			+ solverConstraint.m_relpos1CrossNormal.dot(body0?solverBodyA.m_angularVelocity:btVector3(0,0,0));
+			+ solverConstraint.m_relpos1CrossNormal.dot(body0?angularVelocityA:btVector3(0,0,0));
 		btScalar vel2Dotn = solverConstraint.m_contactNormal2.dot(body1?solverBodyB.m_linearVelocity+solverBodyB.m_externalForceImpulse:btVector3(0,0,0))
-			+ solverConstraint.m_relpos2CrossNormal.dot(body1?solverBodyB.m_angularVelocity:btVector3(0,0,0));
+			+ solverConstraint.m_relpos2CrossNormal.dot(body1?angularVelocityB:btVector3(0,0,0));
 
 		rel_vel = vel1Dotn+vel2Dotn;
 
@@ -1831,8 +1850,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 
 						totalImpulse = solveManifold.m_appliedImpulse;
 					}
-					bool applyFriction = true;
-					if (applyFriction)
+					
 					{
 						{
 
@@ -1916,7 +1934,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 						rollingFrictionConstraint.m_lowerLimit = -rollingFrictionMagnitude;
 						rollingFrictionConstraint.m_upperLimit = rollingFrictionMagnitude;
 
-						btScalar residual = resolveSingleConstraintRowGeneric(m_tmpSolverBodyPool[rollingFrictionConstraint.m_solverBodyIdA],m_tmpSolverBodyPool[rollingFrictionConstraint.m_solverBodyIdB],rollingFrictionConstraint);
+						btScalar residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[rollingFrictionConstraint.m_solverBodyIdA],m_tmpSolverBodyPool[rollingFrictionConstraint.m_solverBodyIdB],rollingFrictionConstraint);
 						leastSquaresResidual += residual*residual;
 					}
 				}
