@@ -172,9 +172,11 @@ void			btRigidBody::applyDamping(btScalar timeStep)
 #ifdef USE_OLD_DAMPING_METHOD
 	m_linearVelocity *= GEN_clamped((btScalar(1.) - timeStep * m_linearDamping), (btScalar)btScalar(0.0), (btScalar)btScalar(1.0));
 	m_angularVelocity *= GEN_clamped((btScalar(1.) - timeStep * m_angularDamping), (btScalar)btScalar(0.0), (btScalar)btScalar(1.0));
+    m_spin *= GEN_clamped((btScalar(1.) - timeStep * m_angularDamping), (btScalar)btScalar(0.0), (btScalar)btScalar(1.0));
 #else
 	m_linearVelocity *= btPow(btScalar(1)-m_linearDamping, timeStep);
 	m_angularVelocity *= btPow(btScalar(1)-m_angularDamping, timeStep);
+    m_spin *= btPow(btScalar(1)-m_angularDamping, timeStep);
 #endif
 
 	if (m_additionalDamping)
