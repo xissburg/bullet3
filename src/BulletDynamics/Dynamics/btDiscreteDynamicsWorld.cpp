@@ -647,6 +647,7 @@ void	btDiscreteDynamicsWorld::updateActivationState(btScalar timeStep)
 					{
 						body->setAngularVelocity(btVector3(0,0,0));
 						body->setLinearVelocity(btVector3(0,0,0));
+						body->setSpin(0);
 					}
 
 				}
