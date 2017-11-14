@@ -81,8 +81,10 @@ static btSimdScalar gResolveSingleConstraintRowGeneric_scalar_reference(btSolver
 static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_scalar_reference(btSolverBody& body1, btSolverBody& body2, const btSolverConstraint& c)
 {
 	btScalar deltaImpulse = c.m_rhs - btScalar(c.m_appliedImpulse)*c.m_cfm;
-	btVector3 deltaAngularVelocity1 = body1.m_useSplitSpin ? body1.internalGetDeltaAngularVelocityWithSpin() : body1.internalGetDeltaAngularVelocity();
-	btVector3 deltaAngularVelocity2 = body2.m_useSplitSpin ? body2.internalGetDeltaAngularVelocityWithSpin() : body2.internalGetDeltaAngularVelocity();
+	bool useSplitSpin1 = body1.m_useSplitSpin && c.m_useSplitSpinBodyA;
+	bool useSplitSpin2 = body2.m_useSplitSpin && c.m_useSplitSpinBodyB;
+	btVector3 deltaAngularVelocity1 = useSplitSpin1 ? body1.internalGetDeltaAngularVelocityWithSpin() : body1.internalGetDeltaAngularVelocity();
+	btVector3 deltaAngularVelocity2 = useSplitSpin2 ? body2.internalGetDeltaAngularVelocityWithSpin() : body2.internalGetDeltaAngularVelocity();
 	const btScalar deltaVel1Dotn = c.m_contactNormal1.dot(body1.internalGetDeltaLinearVelocity()) + c.m_relpos1CrossNormal.dot(deltaAngularVelocity1);
 	const btScalar deltaVel2Dotn = c.m_contactNormal2.dot(body2.internalGetDeltaLinearVelocity()) + c.m_relpos2CrossNormal.dot(deltaAngularVelocity2);
 
@@ -105,14 +107,14 @@ static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_scalar_reference
 		c.m_appliedImpulse = sum;
 	}
 
-	if (body1.m_useSplitSpin) {
+	if (useSplitSpin1) {
 		body1.internalApplyImpulseWithSpinSplit(c.m_contactNormal1*body1.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
 	}
 	else {
 		body1.internalApplyImpulse(c.m_contactNormal1*body1.internalGetInvMass(), c.m_angularComponentA, deltaImpulse);
 	}
 
-	if (body2.m_useSplitSpin) {
+	if (useSplitSpin2) {
 		body2.internalApplyImpulseWithSpinSplit(c.m_contactNormal2*body2.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 	}
 	else {
@@ -619,6 +621,9 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstr
 	solverConstraint.m_appliedPushImpulse = 0.f;
 	
 	solverConstraint.m_flags = 0;
+	
+	solverConstraint.m_useSplitSpinBodyA = true;
+	solverConstraint.m_useSplitSpinBodyB = true;
 
 	if (body0)
 	{
@@ -753,6 +758,9 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 	solverConstraint.m_appliedPushImpulse = 0.f;
 
 	solverConstraint.m_flags = 0;
+	
+	solverConstraint.m_useSplitSpinBodyA = true;
+	solverConstraint.m_useSplitSpinBodyB = true;
 	
 	{
 		btVector3 ftorqueAxis1 = -normalAxis1;
@@ -1708,7 +1716,8 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlySetup(btCol
 							solverConstraint.m_jacDiagABInv = fsum>SIMD_EPSILON?sorRelaxation/sum : 0.f;
 						}
 
-						solverConstraint.m_useSplitSpin = constraint->useSplitSpin();
+						solverConstraint.m_useSplitSpinBodyA = constraint->useSplitSpinBodyA();
+						solverConstraint.m_useSplitSpinBodyB = constraint->useSplitSpinBodyB();
 
 						{
 							btScalar rel_vel;
@@ -1720,13 +1729,13 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlySetup(btCol
 
 							btVector3 angularVelocityA, angularVelocityB;
 
-							if (solverConstraint.m_useSplitSpin && rbA.useSplitSpin()) {
+							if (solverConstraint.m_useSplitSpinBodyA && rbA.useSplitSpin()) {
 								angularVelocityA = rbA.getAngularVelocityWithSpin()+externalTorqueImpulseA;
 							} else {
 								angularVelocityA = rbA.getAngularVelocity()+externalTorqueImpulseA;
 							}
 
-							if (solverConstraint.m_useSplitSpin && rbB.useSplitSpin()) {
+							if (solverConstraint.m_useSplitSpinBodyB && rbB.useSplitSpin()) {
 								angularVelocityB = rbB.getAngularVelocityWithSpin()+externalTorqueImpulseB;
 							} else {
 								angularVelocityB = rbB.getAngularVelocity()+externalTorqueImpulseB;
@@ -1841,7 +1850,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 		{
 			btScalar residual;
 
-			if (constraint.m_useSplitSpin) {
+			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
 				residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[constraint.m_solverBodyIdA],m_tmpSolverBodyPool[constraint.m_solverBodyIdB],constraint);
 			}
 			else {

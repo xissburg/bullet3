@@ -90,7 +90,8 @@ ATTRIBUTE_ALIGNED16(class) btTypedConstraint : public btTypedObject
 	bool		m_needsFeedback;
 	int			m_overrideNumSolverIterations;
 
-	bool m_useSplitSpin;
+	bool m_useSplitSpinBodyA;
+	bool m_useSplitSpinBodyB;
 
 	btTypedConstraint&	operator=(btTypedConstraint&	other)
 	{
@@ -314,14 +315,24 @@ public:
 		return btTypedConstraintType(m_objectType);
 	}
 
-	bool useSplitSpin() const
+	bool useSplitSpinBodyA() const
 	{
-		return m_useSplitSpin;
+		return m_useSplitSpinBodyA;
 	}
 
-	void setUseSplitSpin(bool useSplitSpin)
+	void setUseSplitSpinBodyA(bool useSplitSpin)
 	{
-		m_useSplitSpin = useSplitSpin;
+		m_useSplitSpinBodyA = useSplitSpin;
+	}
+	
+	bool useSplitSpinBodyB() const
+	{
+		return m_useSplitSpinBodyB;
+	}
+
+	void setUseSplitSpinBodyB(bool useSplitSpin)
+	{
+		m_useSplitSpinBodyB = useSplitSpin;
 	}
 
 	void setDbgDrawSize(btScalar dbgDrawSize)

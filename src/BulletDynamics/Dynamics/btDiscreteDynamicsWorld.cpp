@@ -664,7 +664,8 @@ void	btDiscreteDynamicsWorld::addConstraint(btTypedConstraint* constraint,bool d
 {
 	m_constraints.push_back(constraint);
     //Make sure the two bodies of a type constraint are different (possibly add this to the btTypedConstraint constructor?)
-    btAssert(&constraint->getRigidBodyA()!=&constraint->getRigidBodyB());
+	// Allow constraints between same bodies. Useful when constraining an object's spin to its angular velocity.
+    //btAssert(&constraint->getRigidBodyA()!=&constraint->getRigidBodyB());
 
 	if (disableCollisionsBetweenLinkedBodies)
 	{
