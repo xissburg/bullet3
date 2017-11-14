@@ -29,6 +29,12 @@ class btCollisionObject;
 
 typedef btSimdScalar(*btSingleConstraintRowSolver)(btSolverBody&, btSolverBody&, const btSolverConstraint&);
 
+typedef void(*CalculateFrictionDirections)(btCollisionObject* colObj0, btCollisionObject* colObj1, btManifoldPoint& pt);
+extern CalculateFrictionDirections gCalculateFrictionDirections;
+
+typedef void(*PrepareFrictionConstraintCallback)(btSolverConstraint&, btSolverBody&, btSolverBody&, btScalar totalImpulse, int index);
+extern PrepareFrictionConstraintCallback gPrepareFrictionConstraintCallback;
+
 ///The btSequentialImpulseConstraintSolver is a fast SIMD implementation of the Projected Gauss Seidel (iterative LCP) method.
 ATTRIBUTE_ALIGNED16(class) btSequentialImpulseConstraintSolver : public btConstraintSolver
 {

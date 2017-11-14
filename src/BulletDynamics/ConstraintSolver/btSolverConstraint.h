@@ -69,6 +69,8 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 		BT_SOLVER_CONTACT_1D = 0,
 		BT_SOLVER_FRICTION_1D
 	};
+	
+	int m_flags;
 
 	bool m_useSplitSpin;
 };
