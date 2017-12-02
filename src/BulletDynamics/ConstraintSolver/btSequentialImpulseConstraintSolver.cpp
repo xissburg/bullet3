@@ -39,9 +39,6 @@ int		gNumSplitImpulseRecoveries = 0;
 
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 
-CalculateFrictionDirections gCalculateFrictionDirections=0;
-PrepareFrictionConstraintCallback gPrepareFrictionConstraintCallback=0;
-
 //#define VERBOSE_RESIDUAL_PRINTF 1
 ///This is the scalar reference implementation of solving a single constraint row, the innerloop of the Projected Gauss Seidel/Sequential Impulse constraint solver
 ///Below are optional SSE2 and SSE4/FMA3 versions. We assume most hardware has SSE2. For SSE4/FMA3 we perform a CPU feature check.
@@ -620,8 +617,6 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstr
 	solverConstraint.m_appliedImpulse = 0.f;
 	solverConstraint.m_appliedPushImpulse = 0.f;
 	
-	solverConstraint.m_flags = 0;
-	
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
 
@@ -756,8 +751,6 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 
 	solverConstraint.m_appliedImpulse = 0.f;
 	solverConstraint.m_appliedPushImpulse = 0.f;
-
-	solverConstraint.m_flags = 0;
 	
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
@@ -1325,69 +1318,43 @@ void	btSequentialImpulseConstraintSolver::convertContact(btPersistentManifold* m
 
 			if (!(infoGlobal.m_solverMode & SOLVER_ENABLE_FRICTION_DIRECTION_CACHING) || !(cp.m_contactPointFlags&BT_CONTACT_FLAG_LATERAL_FRICTION_INITIALIZED))
 			{
-				if (gCalculateFrictionDirections &&
-					(colObj0->getCollisionFlags() & btCollisionObject::CF_CUSTOM_FRICTION_CALLBACK ||
-				 	 colObj1->getCollisionFlags() & btCollisionObject::CF_CUSTOM_FRICTION_CALLBACK)) 
+				cp.m_lateralFrictionDir1 = vel - cp.m_normalWorldOnB * rel_vel;
+				btScalar lat_rel_vel = cp.m_lateralFrictionDir1.length2();
+				if (!(infoGlobal.m_solverMode & SOLVER_DISABLE_VELOCITY_DEPENDENT_FRICTION_DIRECTION) && lat_rel_vel > SIMD_EPSILON)
 				{
-					(*gCalculateFrictionDirections)(colObj0, colObj1, cp);
-					
+					cp.m_lateralFrictionDir1 *= 1.f/btSqrt(lat_rel_vel);
 					applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
 					applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
 					addFrictionConstraint(cp.m_lateralFrictionDir1,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation,infoGlobal);
-					int index = m_tmpSolverContactFrictionConstraintPool.size()-1;
-					btSolverConstraint& c = m_tmpSolverContactFrictionConstraintPool[index];
-					c.m_flags |= btCollisionObject::CF_CUSTOM_FRICTION_CALLBACK;
-					
-					if (infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS)
+
+					if((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS))
+					{
+						cp.m_lateralFrictionDir2 = cp.m_lateralFrictionDir1.cross(cp.m_normalWorldOnB);
+						cp.m_lateralFrictionDir2.normalize();//??
+						applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
+						applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
+						addFrictionConstraint(cp.m_lateralFrictionDir2,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
+					}
+
+				} else
+				{
+					btPlaneSpace1(cp.m_normalWorldOnB,cp.m_lateralFrictionDir1,cp.m_lateralFrictionDir2);
+
+					applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
+					applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
+					addFrictionConstraint(cp.m_lateralFrictionDir1,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
+
+					if ((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS))
 					{
 						applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
 						applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
 						addFrictionConstraint(cp.m_lateralFrictionDir2,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
-						int index = m_tmpSolverContactFrictionConstraintPool.size()-1;
-						btSolverConstraint& c = m_tmpSolverContactFrictionConstraintPool[index];
-						c.m_flags |= btCollisionObject::CF_CUSTOM_FRICTION_CALLBACK;
 					}
-				}
-				else 
-				{
-					cp.m_lateralFrictionDir1 = vel - cp.m_normalWorldOnB * rel_vel;
-					btScalar lat_rel_vel = cp.m_lateralFrictionDir1.length2();
-					if (!(infoGlobal.m_solverMode & SOLVER_DISABLE_VELOCITY_DEPENDENT_FRICTION_DIRECTION) && lat_rel_vel > SIMD_EPSILON)
+
+
+					if ((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS) && (infoGlobal.m_solverMode & SOLVER_DISABLE_VELOCITY_DEPENDENT_FRICTION_DIRECTION))
 					{
-						cp.m_lateralFrictionDir1 *= 1.f/btSqrt(lat_rel_vel);
-						applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-						applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-						addFrictionConstraint(cp.m_lateralFrictionDir1,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation,infoGlobal);
-
-						if((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS))
-						{
-							cp.m_lateralFrictionDir2 = cp.m_lateralFrictionDir1.cross(cp.m_normalWorldOnB);
-							cp.m_lateralFrictionDir2.normalize();//??
-							applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-							applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-							addFrictionConstraint(cp.m_lateralFrictionDir2,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
-						}
-
-					} else
-					{
-						btPlaneSpace1(cp.m_normalWorldOnB,cp.m_lateralFrictionDir1,cp.m_lateralFrictionDir2);
-
-						applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-						applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir1,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-						addFrictionConstraint(cp.m_lateralFrictionDir1,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
-
-						if ((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS))
-						{
-							applyAnisotropicFriction(colObj0,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-							applyAnisotropicFriction(colObj1,cp.m_lateralFrictionDir2,btCollisionObject::CF_ANISOTROPIC_FRICTION);
-							addFrictionConstraint(cp.m_lateralFrictionDir2,solverBodyIdA,solverBodyIdB,frictionIndex,cp,rel_pos1,rel_pos2,colObj0,colObj1, relaxation, infoGlobal);
-						}
-
-
-						if ((infoGlobal.m_solverMode & SOLVER_USE_2_FRICTION_DIRECTIONS) && (infoGlobal.m_solverMode & SOLVER_DISABLE_VELOCITY_DEPENDENT_FRICTION_DIRECTION))
-						{
-							cp.m_contactPointFlags|=BT_CONTACT_FLAG_LATERAL_FRICTION_INITIALIZED;
-						}
+						cp.m_contactPointFlags|=BT_CONTACT_FLAG_LATERAL_FRICTION_INITIALIZED;
 					}
 				}
 				
@@ -1951,16 +1918,8 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 
 				if (totalImpulse>btScalar(0))
 				{
-					if (gPrepareFrictionConstraintCallback && 
-						solveManifold.m_flags & btCollisionObject::CF_CUSTOM_FRICTION_CALLBACK) {
-						btSolverBody& bodyA = m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA];
-						btSolverBody& bodyB = m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB];
-						(*gPrepareFrictionConstraintCallback)(solveManifold, bodyA, bodyB, totalImpulse, j);
-					}
-					else {
-						solveManifold.m_lowerLimit = -(solveManifold.m_friction*totalImpulse);
-						solveManifold.m_upperLimit = solveManifold.m_friction*totalImpulse;
-					}
+					solveManifold.m_lowerLimit = -(solveManifold.m_friction*totalImpulse);
+					solveManifold.m_upperLimit = solveManifold.m_friction*totalImpulse;
 
 					btScalar residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA],m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB],solveManifold);
 					leastSquaresResidual += residual*residual;
