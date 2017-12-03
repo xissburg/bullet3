@@ -110,6 +110,8 @@ class btManifoldPoint
 			int			m_partId1;
 			int			m_index0;
 			int			m_index1;
+			
+			int 		m_solverConstraintIndex;
 				
 			mutable void*	m_userPersistentData;
 			//bool			m_lateralFrictionInitialized;

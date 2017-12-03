@@ -25,6 +25,7 @@ class	btRigidBody;
 //#define NO_FRICTION_TANGENTIALS 1
 #include "btSolverBody.h"
 
+class btTypedConstraint;
 
 ///1D constraint along a normal axis between bodyA and bodyB. It can be combined to solve contact and friction constraints.
 ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
@@ -72,6 +73,8 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 
 	bool m_useSplitSpinBodyA;
 	bool m_useSplitSpinBodyB;
+	
+	btTypedConstraint* m_originalConstraint;
 };
 
 typedef btAlignedObjectArray<btSolverConstraint>	btConstraintArray;

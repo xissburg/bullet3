@@ -2,6 +2,25 @@
 #include "btBulletDynamicsCommon.h"
 #include "../CommonInterfaces/CommonRigidBodyBase.h"
 #include "../Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h"
+#include <BulletCollision/CollisionShapes/btTriangleShape.h>
+#include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
+
+#include <iostream>
+#include <iomanip>
+
+bool contactAdded(btManifoldPoint& cp,	const btCollisionObjectWrapper* colObj0Wrap,int partId0,int index0,const btCollisionObjectWrapper* colObj1Wrap,int partId1,int index1)
+{
+    if (colObj0Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE) {
+        btAdjustInternalEdgeContacts(cp, colObj0Wrap, colObj1Wrap, partId0, index0);
+    }
+    else if (colObj1Wrap->getCollisionShape()->getShapeType() == TRIANGLE_SHAPE_PROXYTYPE) {
+        btAdjustInternalEdgeContacts(cp, colObj1Wrap, colObj0Wrap, partId1, index1);
+    }
+    //this return value is currently ignored, but to be on the safe side: return false if you don't calculate friction
+    return true;
+}
+
+extern ContactAddedCallback gContactAddedCallback;
 
 struct NonDeterminismExample : public CommonRigidBodyBase
 {
@@ -12,9 +31,12 @@ struct NonDeterminismExample : public CommonRigidBodyBase
     btHinge2Constraint* m_hingeRL[2];
     btHinge2Constraint* m_hingeRR[2];
     
+    btRigidBody* m_wheelRL;
+    
     NonDeterminismExample(struct GUIHelperInterface* helper)
     :CommonRigidBodyBase(helper)
     {
+        gContactAddedCallback = contactAdded;
     }
     virtual ~NonDeterminismExample(){}
     virtual void initPhysics();
@@ -69,6 +91,23 @@ void NonDeterminismExample::initPhysics()
     
     m_dynamicsWorld->setGravity(btVector3(0, -9.81, 0));
     
+    for (int i = 0; i < importer.getNumCollisionShapes(); ++i) {
+        btCollisionShape* shape = importer.getCollisionShapeByIndex(i);
+        btBvhTriangleMeshShape* trimeshShape = nullptr;
+        
+        if (shape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE) {
+            trimeshShape = reinterpret_cast<btScaledBvhTriangleMeshShape*>(shape)->getChildShape();
+        }
+        else if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
+            trimeshShape = reinterpret_cast<btBvhTriangleMeshShape*>(shape);
+        }
+        
+        if (trimeshShape) {
+            auto* triangleInfoMap = new btTriangleInfoMap(); // LEAK
+            btGenerateInternalEdgeInfo(trimeshShape, triangleInfoMap);
+        }
+    }
+    
 #else
     btBoxShape* groundShape = createBoxShape(btVector3(btScalar(50.),btScalar(10.),btScalar(50.)));
     btCollisionShape* groundShape = new btStaticPlaneShape(btVector3(0,1,0),50);
@@ -120,7 +159,7 @@ void NonDeterminismExample::initPhysics()
         btVector3(btScalar(-1.), btScalar(-0.25+5), btScalar(-1.25))
     };
     
-    for (int j=0;j<2;j++) {
+    for (int j=0;j<1;j++) {
         m_carChassis[j] = createRigidBody(chassisMass,chassisTransform,compound,group,mask);
 
         for (int i=0;i<4;i++)
@@ -134,6 +173,10 @@ void NonDeterminismExample::initPhysics()
             btRigidBody* pBodyB = createRigidBody(30.0, tr, m_wheelShape, group, mask);
             pBodyB->setFriction(0.8);
             pBodyB->setRollingFriction(0.1);
+            //pBodyB->setContactProcessingThreshold(0);
+            pBodyB->setCollisionFlags(btCollisionObject::CF_CUSTOM_MATERIAL_CALLBACK | pBodyB->getCollisionFlags());
+            pBodyB->setUseSplitSpin(true);
+            
             // add some data to build constraint frames
             btVector3 parentAxis(0.f, 1.f, 0.f);
             btVector3 childAxis(1.f, 0.f, 0.f);
@@ -162,10 +205,16 @@ void NonDeterminismExample::initPhysics()
             
             pHinge2->setDbgDrawSize(btScalar(5.f));
             
+            pHinge2->setUseSplitSpin(true);
+            
             if (i == 0) m_hingeFR[j] = pHinge2;
             if (i == 1) m_hingeFL[j] = pHinge2;
             if (i == 2) m_hingeRR[j] = pHinge2;
             if (i == 3) m_hingeRL[j] = pHinge2;
+            
+            if (i == 3) {
+                m_wheelRL = pBodyB;
+            }
         }
     }
     
@@ -176,13 +225,31 @@ void NonDeterminismExample::initPhysics()
 void NonDeterminismExample::stepSimulation(float deltaTime)
 {
     CommonRigidBodyBase::stepSimulation(deltaTime);
+    /*
+    auto* dispatcher = m_dynamicsWorld->getDispatcher();
+    
+    for (int j = 0; j < dispatcher->getNumManifolds(); ++j) {
+        auto* manifold = dispatcher->getManifoldByIndexInternal(j);
+        const btRigidBody* rbA = (btRigidBody*)manifold->getBody0();
+        const btRigidBody* rbB = (btRigidBody*)manifold->getBody1();
+        
+        if (rbA == m_wheelRL || rbB == m_wheelRL) {
+            for (int i = 0; i < manifold->getNumContacts(); ++i) {
+                const btManifoldPoint& pt = manifold->getContactPoint(i);
+                const btVector3& n = pt.m_normalWorldOnB;
+                std::cout << std::fixed << std::setprecision(3) << i << " n: (" << n.x() << ", " << n.y() << ", " << n.z() << ")" << std::endl;
+            }
+            
+            break;
+        }
+    }*/
 }
 
 bool NonDeterminismExample::keyboardCallback(int key, int state)
 {
     bool handled = false;
     
-    for (int j=0;j<2;j++) {
+    for (int j=0;j<1;j++) {
         switch (key) {
             case B3G_LEFT_ARROW : {
                 handled = true;

@@ -620,6 +620,8 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstr
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
 
+	solverConstraint.m_originalConstraint = 0;
+
 	if (body0)
 	{
 		solverConstraint.m_contactNormal1 = normalAxis;
@@ -754,6 +756,8 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 	
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
+	
+	solverConstraint.m_originalConstraint = 0;
 	
 	{
 		btVector3 ftorqueAxis1 = -normalAxis1;
@@ -1242,6 +1246,7 @@ void	btSequentialImpulseConstraintSolver::convertContact(btPersistentManifold* m
 			solverConstraint.m_solverBodyIdB = solverBodyIdB;
 
 			solverConstraint.m_originalContactPoint = &cp;
+			cp.m_solverConstraintIndex = frictionIndex;
 
 			const btVector3& pos1 = cp.getPositionWorldOnA();
 			const btVector3& pos2 = cp.getPositionWorldOnB();
@@ -1639,13 +1644,16 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlySetup(btCol
 					info2.m_lowerLimit = &currentConstraintRow->m_lowerLimit;
 					info2.m_upperLimit = &currentConstraintRow->m_upperLimit;
 					info2.m_numIterations = infoGlobal.m_numIterations;
+					info2.m_index = &currentConstraintRow->m_frictionIndex;
 					constraints[i]->getInfo2(&info2);
 
 					///finalize the constraint setup
 					for ( j=0;j<info1.m_numConstraintRows;j++)
 					{
 						btSolverConstraint& solverConstraint = currentConstraintRow[j];
-
+						
+						solverConstraint.m_originalConstraint = constraints[i];
+						
 						if (solverConstraint.m_upperLimit>=constraints[i]->getBreakingImpulseThreshold())
 						{
 							solverConstraint.m_upperLimit = constraints[i]->getBreakingImpulseThreshold();
@@ -1816,6 +1824,9 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 		if (iteration < constraint.m_overrideNumSolverIterations)
 		{
 			btScalar residual;
+			
+			// TODO: get rid of virtual function call (??)
+			constraint.m_originalConstraint->prepareSolverConstraint(constraint);
 
 			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
 				residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[constraint.m_solverBodyIdA],m_tmpSolverBodyPool[constraint.m_solverBodyIdB],constraint);

@@ -189,6 +189,8 @@ public:
 	btSingleConstraintRowSolver	getScalarConstraintRowSolverLowerLimit();
 	btSingleConstraintRowSolver	getSSE2ConstraintRowSolverLowerLimit();
 	btSingleConstraintRowSolver	getSSE4_1ConstraintRowSolverLowerLimit();
+	
+	btSolverConstraint& getSolverContactConstraintAtIndex(int i) { return m_tmpSolverContactConstraintPool[i]; }
 };
 
 

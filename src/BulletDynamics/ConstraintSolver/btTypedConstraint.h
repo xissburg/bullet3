@@ -152,6 +152,8 @@ public:
 
 		//damping of the velocity
 		btScalar	m_damping;
+		
+		int *m_index;
 	};
 
 	int	getOverrideNumSolverIterations() const
@@ -334,6 +336,8 @@ public:
 	{
 		m_useSplitSpinBodyB = useSplitSpin;
 	}
+	
+	virtual void prepareSolverConstraint(btSolverConstraint& solverConstraint) { }
 
 	void setDbgDrawSize(btScalar dbgDrawSize)
 	{
