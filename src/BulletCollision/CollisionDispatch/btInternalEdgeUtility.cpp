@@ -31,7 +31,7 @@ static void    btDebugDrawLine(const btVector3& from,const btVector3& to, const 
 #endif //BT_INTERNAL_EDGE_DEBUG_DRAW
 
 
-static int	btGetHash(int partId, int triangleIndex)
+int	btGetHash(int partId, int triangleIndex)
 {
 	int hash = (partId<<(31-MAX_NUM_PARTS_IN_BITS)) | triangleIndex;
 	return hash;

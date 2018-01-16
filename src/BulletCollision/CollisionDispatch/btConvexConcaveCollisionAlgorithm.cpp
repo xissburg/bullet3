@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionShapes/btMultiSphereShape.h"
 #include "BulletCollision/BroadphaseCollision/btBroadphaseProxy.h"
 #include "BulletCollision/CollisionShapes/btConcaveShape.h"
+#include "BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h"
 #include "BulletCollision/CollisionDispatch/btManifoldResult.h"
 #include "BulletCollision/NarrowPhaseCollision/btRaycastCallback.h"
 #include "BulletCollision/CollisionShapes/btTriangleShape.h"
@@ -27,6 +28,7 @@ subject to the following restrictions:
 #include "LinearMath/btIDebugDraw.h"
 #include "BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h"
+#include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
 
 btConvexConcaveCollisionAlgorithm::btConvexConcaveCollisionAlgorithm( const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap,const btCollisionObjectWrapper* body1Wrap,bool isSwapped)
 : btActivatingCollisionAlgorithm(ci,body0Wrap,body1Wrap),
@@ -76,7 +78,6 @@ void	btConvexTriangleCallback::clearCache()
 	m_dispatcher->clearManifold(m_manifoldPtr);
 }
 
-
 void btConvexTriangleCallback::processTriangle(btVector3* triangle,int
 partId, int triangleIndex)
 {
@@ -116,6 +117,12 @@ partId, int triangleIndex)
 		btTriangleShape tm(triangle[0],triangle[1],triangle[2]);	
 		tm.setMargin(m_collisionMarginTriangle);
 		
+		// Add points to a temporary manifold in the convex-triangle collision algorithm
+		// and then only add points that lie on the triangle face or in the voronoi region
+		// of the edges to the original manifold.
+		btPersistentManifold* originalManifold = m_resultOut->getPersistentManifold();
+		btPersistentManifold* tempManifold = m_dispatcher->getNewManifold(m_convexBodyWrap->getCollisionObject(),m_triBodyWrap->getCollisionObject());
+		m_resultOut->setPersistentManifold(tempManifold);
 		
 		btCollisionObjectWrapper triObWrap(m_triBodyWrap,&tm,m_triBodyWrap->getCollisionObject(),m_triBodyWrap->getWorldTransform(),partId,triangleIndex);//correct transform?
 		btCollisionAlgorithm* colAlgo = 0;
@@ -126,7 +133,7 @@ partId, int triangleIndex)
 		}
 		else
 		{
-			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, m_manifoldPtr, BT_CONTACT_POINT_ALGORITHMS);
+			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, tempManifold, BT_CONTACT_POINT_ALGORITHMS);
 		}
 		const btCollisionObjectWrapper* tmpWrap = 0;
 
@@ -142,8 +149,81 @@ partId, int triangleIndex)
 			m_resultOut->setBody1Wrap(&triObWrap);
 			m_resultOut->setShapeIdentifiersB(partId,triangleIndex);
 		}
-	
+
 		colAlgo->processCollision(m_convexBodyWrap,&triObWrap,*m_dispatchInfoPtr,m_resultOut);
+
+		// reset back to original manifold and only add valid points to it
+		m_resultOut->setPersistentManifold(originalManifold);
+		
+		const btBvhTriangleMeshShape* trimeshShape = 0;
+		const btCollisionShape* shape = m_triBodyWrap->getCollisionObject()->getCollisionShape();
+
+		if (shape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE) {
+            trimeshShape = static_cast<const btScaledBvhTriangleMeshShape*>(shape)->getChildShape();
+        }
+        else if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) {
+            trimeshShape = static_cast<const btBvhTriangleMeshShape*>(shape);
+        }
+		
+		int hash = btGetHash(partId, triangleIndex);
+		const btTriangleInfo* info = trimeshShape->getTriangleInfoMap()->find(hash);
+		btAssert(info);
+		
+		btVector3 normal;
+		tm.calcNormal(normal);
+		btMatrix3x3 invBasisB = triObWrap.getWorldTransform().getBasis().inverse();
+				
+		for (int i = 0; i < tempManifold->getNumContacts(); ++i) {
+			bool pointOnEdge = false;
+			btManifoldPoint& pt = tempManifold->getContactPoint(i);
+			
+			// only add points that either lie on the triangle or in the voronoi
+			// region of the edges
+			for (int j = 0; j < 3; ++j) {
+				btVector3 e0, e1;
+				tm.getEdge(j, e0, e1);
+				btVector3 edge = e1 - e0;
+				btVector3 p = pt.m_localPointB - e0;
+				
+				// calc distance from p to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
+				btScalar t = p.dot(edge) / edge.dot(edge);
+				p -= t * edge;
+				btScalar distanceSq = p.dot(p);
+
+				if (distanceSq < SIMD_EPSILON) {
+					btScalar edgeAngle = j == 0 ? info->m_edgeV0V1Angle : 
+									    (j == 1 ? info->m_edgeV1V2Angle : 
+											      info->m_edgeV2V0Angle);
+					btScalar convex = j == 0 ? info->m_flags & TRI_INFO_V0V1_CONVEX :
+									 (j == 1 ? info->m_flags & TRI_INFO_V1V2_CONVEX :
+											   info->m_flags & TRI_INFO_V2V0_CONVEX);
+
+					if (edgeAngle == SIMD_2_PI) { // triangle has no adjacent faces
+						m_resultOut->addContactPoint(pt.m_normalWorldOnB, pt.m_positionWorldOnB, pt.m_distance1);
+					}
+					// ignore concave edges and small angles
+					else if (convex && fabsf(edgeAngle) > btRadians(1.8)) { 
+						btVector3 contactNormal = invBasisB * pt.m_normalWorldOnB;
+						btScalar c = contactNormal.dot(normal);
+						btScalar a = btAcos(c);
+						
+						// add it if it's in the edge's voronoi region
+						if (a < fabsf(edgeAngle)) {
+							m_resultOut->addContactPoint(pt.m_normalWorldOnB, pt.m_positionWorldOnB, pt.m_distance1);
+						}
+					}
+										
+					pointOnEdge = true;
+					break;
+				}
+			}
+			
+			if (!pointOnEdge) { // point is on triangle face
+				m_resultOut->addContactPoint(pt.m_normalWorldOnB, pt.m_positionWorldOnB, pt.m_distance1);
+			}
+		}
+		
+		m_dispatcher->releaseManifold(tempManifold);
 
 		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
 		{

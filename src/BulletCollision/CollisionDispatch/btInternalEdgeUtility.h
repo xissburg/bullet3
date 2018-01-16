@@ -42,6 +42,6 @@ void	btAdjustInternalEdgeContacts(btManifoldPoint& cp, const btCollisionObjectWr
 void	btSetDebugDrawer(btIDebugDraw* debugDrawer);
 #endif //BT_INTERNAL_EDGE_DEBUG_DRAW
 
+int btGetHash(int partId, int triangleIndex);
 
 #endif //BT_INTERNAL_EDGE_UTILITY_H
-
