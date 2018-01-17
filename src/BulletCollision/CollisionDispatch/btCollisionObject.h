@@ -345,12 +345,6 @@ public:
 		m_contactDamping = damping;
 		
 		m_collisionFlags |=CF_HAS_CONTACT_STIFFNESS_DAMPING;
-		
-        //avoid divisions by zero...
-		if (m_contactStiffness< SIMD_EPSILON)
-        {
-            m_contactStiffness = SIMD_EPSILON;
-        }
 	}
 	
 	btScalar	getContactStiffness() const

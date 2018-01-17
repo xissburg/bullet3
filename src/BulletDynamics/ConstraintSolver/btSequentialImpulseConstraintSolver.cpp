@@ -364,6 +364,11 @@ static btSimdScalar gResolveSplitPenetrationImpulse_scalar_reference(
 				deltaImpulse = c.m_lowerLimit-c.m_appliedPushImpulse;
 				c.m_appliedPushImpulse = c.m_lowerLimit;
 			}
+			else if (sum > c.m_upperLimit)
+			{
+				deltaImpulse = c.m_upperLimit - c.m_appliedImpulse;
+				c.m_appliedImpulse = c.m_upperLimit;
+			}
 			else
 			{
 				c.m_appliedPushImpulse = sum;
@@ -975,18 +980,6 @@ void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstra
                     cfm  = cp.m_contactCFM;
                 if (cp.m_contactPointFlags&BT_CONTACT_FLAG_HAS_CONTACT_ERP)
                     erp = cp.m_contactERP;
-            } else
-            {
-                if (cp.m_contactPointFlags & BT_CONTACT_FLAG_CONTACT_STIFFNESS_DAMPING)
-                {
-                    btScalar denom = ( infoGlobal.m_timeStep * cp.m_combinedContactStiffness1 + cp.m_combinedContactDamping1 );
-                    if (denom < SIMD_EPSILON)
-                    {
-                        denom = SIMD_EPSILON;
-                    }
-                    cfm = btScalar(1) / denom;
-                    erp = (infoGlobal.m_timeStep * cp.m_combinedContactStiffness1) / denom;
-                }
             }
 
             cfm *= invTimeStep;
@@ -1098,8 +1091,6 @@ void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstra
 					btScalar positionalError = 0.f;
 					btScalar	velocityError = restitution - rel_vel;// * damping;
 
-
-
 					if (penetration>0)
 					{
 						positionalError = 0;
@@ -1128,7 +1119,16 @@ void btSequentialImpulseConstraintSolver::setupContactConstraint(btSolverConstra
 					}
 					solverConstraint.m_cfm = cfm*solverConstraint.m_jacDiagABInv;
 					solverConstraint.m_lowerLimit = 0;
-					solverConstraint.m_upperLimit = 1e10f;
+					
+					if (cp.m_contactPointFlags & BT_CONTACT_FLAG_CONTACT_STIFFNESS_DAMPING)
+					{
+						btScalar springForce = fabsf(penetration * cp.m_combinedContactStiffness1);
+						btScalar damperForce = fabsf(rel_vel * cp.m_combinedContactDamping1);
+						solverConstraint.m_upperLimit = (springForce + damperForce) * infoGlobal.m_timeStep;
+					} else 
+					{
+						solverConstraint.m_upperLimit = 1e10;
+					}
 				}
 
 
@@ -1865,7 +1865,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 
 				{
 					const btSolverConstraint& solveManifold = m_tmpSolverContactConstraintPool[m_orderTmpConstraintPool[c]];
-					btScalar residual = resolveSingleConstraintRowLowerLimit(m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA],m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB],solveManifold);
+					btScalar residual = resolveSingleConstraintRowGeneric(m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA],m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB],solveManifold);
 					leastSquaresResidual += residual*residual;
 
 					totalImpulse = solveManifold.m_appliedImpulse;
@@ -1913,7 +1913,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 			for (j=0;j<numPoolConstraints;j++)
 			{
 				const btSolverConstraint& solveManifold = m_tmpSolverContactConstraintPool[m_orderTmpConstraintPool[j]];
-				btScalar residual = resolveSingleConstraintRowLowerLimit(m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA],m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB],solveManifold);
+				btScalar residual = resolveSingleConstraintRowGeneric(m_tmpSolverBodyPool[solveManifold.m_solverBodyIdA],m_tmpSolverBodyPool[solveManifold.m_solverBodyIdB],solveManifold);
 				leastSquaresResidual += residual*residual;
 			}
 

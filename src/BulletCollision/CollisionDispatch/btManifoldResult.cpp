@@ -75,14 +75,7 @@ btScalar	btManifoldResult::calculateCombinedContactDamping(const btCollisionObje
 
 btScalar	btManifoldResult::calculateCombinedContactStiffness(const btCollisionObject* body0,const btCollisionObject* body1)
 {
-    
-    btScalar s0 = body0->getContactStiffness();
-    btScalar s1 = body1->getContactStiffness();
-    
-    btScalar tmp0 = btScalar(1)/s0;
-    btScalar tmp1 = btScalar(1)/s1;
-    btScalar combinedStiffness = btScalar(1) / (tmp0+tmp1);
-    return combinedStiffness;
+    return body0->getContactStiffness() + body1->getContactStiffness();
 }
 
 
@@ -199,4 +192,3 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 		gContactStartedCallback(m_manifoldPtr);
 	}
 }
-
