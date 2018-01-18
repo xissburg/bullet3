@@ -22,7 +22,7 @@ btWorldImporter::btWorldImporter(btDynamicsWorld* world)
 :m_dynamicsWorld(world),
 m_verboseMode(0)
 {
-
+	m_worldTransform.setIdentity();
 }
 
 btWorldImporter::~btWorldImporter()
@@ -2033,12 +2033,8 @@ void	btWorldImporter::convertRigidBodyFloat( btRigidBodyFloatData* colObjData)
 		btTransform startTransform;
 		colObjData->m_collisionObjectData.m_worldTransform.m_origin.m_floats[3] = 0.f;
 		startTransform.deSerializeFloat(colObjData->m_collisionObjectData.m_worldTransform);
-        
-        // Files exported from Blender have z-up. Rotate -90 degrees along x axis to fix
-        // TODO: create an option to choose a transform to apply to all bodies or the desired coordinate system
-        btQuaternion q(btVector3(1,0,0), -SIMD_HALF_PI);
-        startTransform.setRotation(q * startTransform.getRotation());
-        startTransform.setOrigin(quatRotate(q, startTransform.getOrigin()));
+		
+		startTransform = m_worldTransform * startTransform;
 				
 		btCollisionShape* shape = (btCollisionShape*)*shapePtr;
 		if (shape->isNonMoving())

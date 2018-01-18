@@ -96,6 +96,7 @@ protected:
 	btHashMap<btHashPtr,btCollisionShape*>	m_shapeMap;
 	btHashMap<btHashPtr,btCollisionObject*>	m_bodyMap;
 
+	btTransform m_worldTransform; // transform to be applied to all bodies
 
 	//methods
 
@@ -129,6 +130,16 @@ public:
 	int getVerboseMode() const
 	{
 		return m_verboseMode;
+	}
+	
+	void setWorldTransform(const btTransform& t)
+	{
+		m_worldTransform = t;
+	}
+	
+	btTransform getWorldTransform() const
+	{
+		return m_worldTransform;
 	}
 
 		// query for data
