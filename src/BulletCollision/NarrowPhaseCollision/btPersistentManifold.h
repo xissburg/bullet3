@@ -73,7 +73,7 @@ ATTRIBUTE_ALIGNED16( class) btPersistentManifold : public btTypedObject
 
 	btScalar	m_contactBreakingThreshold;
 	btScalar	m_contactProcessingThreshold;
-
+	btScalar 	m_contactCachingThreshold;
 	
 	/// sort cached points so most isolated points come first
 	int	sortCachedPoints(const btManifoldPoint& pt);
@@ -91,11 +91,12 @@ public:
 
 	btPersistentManifold();
 
-	btPersistentManifold(const btCollisionObject* body0,const btCollisionObject* body1,int , btScalar contactBreakingThreshold,btScalar contactProcessingThreshold)
+	btPersistentManifold(const btCollisionObject* body0,const btCollisionObject* body1,int , btScalar contactBreakingThreshold,btScalar contactProcessingThreshold,btScalar contactCachingThreshold)
 		: btTypedObject(BT_PERSISTENT_MANIFOLD_TYPE),
 	m_body0(body0),m_body1(body1),m_cachedPoints(0),
 		m_contactBreakingThreshold(contactBreakingThreshold),
-		m_contactProcessingThreshold(contactProcessingThreshold)
+		m_contactProcessingThreshold(contactProcessingThreshold),
+		m_contactCachingThreshold(contactCachingThreshold)
 	{
 	}
 
@@ -152,7 +153,15 @@ public:
 		m_contactProcessingThreshold = contactProcessingThreshold;
 	}
 	
+	btScalar getContactCachingThreshold() const
+	{
+		return m_contactCachingThreshold;
+	}
 	
+	void setContactCachingThreshold(btScalar contactCachingThreshold)
+	{
+		m_contactCachingThreshold = contactCachingThreshold;
+	}
 
 
 	int getCacheEntry(const btManifoldPoint& newPoint) const;

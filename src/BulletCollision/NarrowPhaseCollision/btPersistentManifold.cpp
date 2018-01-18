@@ -17,7 +17,6 @@ subject to the following restrictions:
 #include "btPersistentManifold.h"
 #include "LinearMath/btTransform.h"
 
-
 btScalar					gContactBreakingThreshold = btScalar(0.02);
 ContactDestroyedCallback	gContactDestroyedCallback = 0;
 ContactProcessedCallback	gContactProcessedCallback = 0;
@@ -189,7 +188,7 @@ int btPersistentManifold::sortCachedPoints(const btManifoldPoint& pt)
 
 int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
 {
-	btScalar shortestDist =  getContactBreakingThreshold() * getContactBreakingThreshold();
+	btScalar shortestDist = getContactCachingThreshold() * getContactCachingThreshold();
 	int size = getNumContacts();
 	int nearestPoint = -1;
 	for( int i = 0; i < size; i++ )
@@ -295,7 +294,8 @@ void btPersistentManifold::refreshContactPoints(const btTransform& trA,const btT
 			projectedPoint = manifoldPoint.m_positionWorldOnA - manifoldPoint.m_normalWorldOnB * manifoldPoint.m_distance1;
 			projectedDifference = manifoldPoint.m_positionWorldOnB - projectedPoint;
 			distance2d = projectedDifference.dot(projectedDifference);
-			if (distance2d  > getContactBreakingThreshold()*getContactBreakingThreshold() )
+
+			if (distance2d > getContactBreakingThreshold()*getContactBreakingThreshold() )
 			{
 				removeContactPoint(i);
 			} else

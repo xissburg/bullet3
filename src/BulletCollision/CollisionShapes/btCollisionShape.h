@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "LinearMath/btVector3.h"
 #include "LinearMath/btMatrix3x3.h"
 #include "BulletCollision/BroadphaseCollision/btBroadphaseProxy.h" //for the shape types
+
 class btSerializer;
 
 
@@ -30,12 +31,13 @@ protected:
 	int m_shapeType;
 	void* m_userPointer;
 	int m_userIndex;
+	btScalar	m_contactCachingThreshold;	
 
 public:
 
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	btCollisionShape() : m_shapeType (INVALID_SHAPE_PROXYTYPE), m_userPointer(0), m_userIndex(-1)
+	btCollisionShape() : m_shapeType (INVALID_SHAPE_PROXYTYPE), m_userPointer(0), m_userIndex(-1), m_contactCachingThreshold(0)
 	{
 	}
 
@@ -53,7 +55,19 @@ public:
 
 	virtual btScalar	getContactBreakingThreshold(btScalar defaultContactThresholdFactor) const;
 
-
+	void	setContactCachingThreshold( btScalar contactCachingThreshold)
+	{
+		m_contactCachingThreshold = contactCachingThreshold;
+	}
+	btScalar getContactCachingThreshold() const
+	{
+		if (m_contactCachingThreshold > 0) {
+			return m_contactCachingThreshold;
+		}
+		
+		return getContactBreakingThreshold(0.02);
+	}
+	
 	///calculateTemporalAabb calculates the enclosing aabb for the moving object over interval [0..timeStep)
 	///result is conservative
 	void calculateTemporalAabb(const btTransform& curTrans,const btVector3& linvel,const btVector3& angvel,btScalar timeStep, btVector3& temporalAabbMin,btVector3& temporalAabbMax) const;
@@ -167,4 +181,3 @@ SIMD_FORCE_INLINE	int	btCollisionShape::calculateSerializeBufferSize() const
 
 
 #endif //BT_COLLISION_SHAPE_H
-

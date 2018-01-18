@@ -46,6 +46,8 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold( const btCollision
 
     btScalar contactProcessingThreshold = btMin( body0->getContactProcessingThreshold(), body1->getContactProcessingThreshold() );
 
+    btScalar contactCachingThreshold = btMax(body0->getCollisionShape()->getContactCachingThreshold(), body1->getCollisionShape()->getContactCachingThreshold());
+
     void* mem = m_persistentManifoldPoolAllocator->allocate( sizeof( btPersistentManifold ) );
     if ( NULL == mem )
     {
@@ -61,7 +63,7 @@ btPersistentManifold* btCollisionDispatcherMt::getNewManifold( const btCollision
             return 0;
         }
     }
-    btPersistentManifold* manifold = new( mem ) btPersistentManifold( body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold );
+    btPersistentManifold* manifold = new( mem ) btPersistentManifold( body0, body1, 0, contactBreakingThreshold, contactProcessingThreshold, contactCachingThreshold );
     if ( !m_batchUpdating )
     {
         // batch updater will update manifold pointers array after finishing, so
@@ -160,5 +162,3 @@ void btCollisionDispatcherMt::dispatchAllCollisionPairs( btOverlappingPairCache*
         m_manifoldsPtr[ i ]->m_index1a = i;
     }
 }
-
-
