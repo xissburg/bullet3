@@ -171,7 +171,7 @@ partId, int triangleIndex)
 		
 		btVector3 normal;
 		tm.calcNormal(normal);
-		btMatrix3x3 invBasisB = triObWrap.getWorldTransform().getBasis().inverse();
+		normal = triObWrap.getWorldTransform().getBasis() * normal;
 				
 		for (int i = 0; i < tempManifold->getNumContacts(); ++i) {
 			bool pointOnEdge = false;
@@ -189,7 +189,7 @@ partId, int triangleIndex)
 				btScalar t = p.dot(edge) / edge.dot(edge);
 				p -= t * edge;
 				btScalar distanceSq = p.dot(p);
-
+				
 				if (distanceSq < SIMD_EPSILON) {
 					btScalar edgeAngle = j == 0 ? info->m_edgeV0V1Angle : 
 									    (j == 1 ? info->m_edgeV1V2Angle : 
@@ -202,18 +202,20 @@ partId, int triangleIndex)
 						m_resultOut->addContactPoint(pt.m_normalWorldOnB, pt.m_positionWorldOnB, pt.m_distance1);
 					}
 					// ignore concave edges and small angles
-					else if (convex && fabsf(edgeAngle) > btRadians(1.8)) { 
-						btVector3 contactNormal = invBasisB * pt.m_normalWorldOnB;
+					else { 
+						btVector3 contactNormal = pt.m_normalWorldOnB;
 						btScalar c = contactNormal.dot(normal);
 						btScalar a = btAcos(c);
 						
 						// add it if it's in the edge's voronoi region
-						if (a < fabsf(edgeAngle)) {
+						if (a < fabsf(edgeAngle) + 0.00000001) {
 							m_resultOut->addContactPoint(pt.m_normalWorldOnB, pt.m_positionWorldOnB, pt.m_distance1);
 						}
+						
 					}
-										
+
 					pointOnEdge = true;
+
 					break;
 				}
 			}
