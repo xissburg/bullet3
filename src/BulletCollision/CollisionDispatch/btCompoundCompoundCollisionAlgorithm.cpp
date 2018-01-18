@@ -330,16 +330,24 @@ void btCompoundCompoundCollisionAlgorithm::processCollision (const btCollisionOb
 	}
 
 
+	btCompoundCompoundLeafCallback callback(col0ObjWrap,col1ObjWrap,this->m_dispatcher,dispatchInfo,resultOut,this->m_childCollisionAlgorithmCache,m_sharedManifold);
+
+
+	const btTransform	xform=col0ObjWrap->getWorldTransform().inverse()*col1ObjWrap->getWorldTransform();
+	MycollideTT(tree0->m_root,tree1->m_root,xform,&callback, resultOut->m_closestPointDistanceThreshold);
+
+	//printf("#compound-compound child/leaf overlap =%d                      \r",callback.m_numOverlapPairs);
+
 	///we need to refresh all contact manifolds
 	///note that we should actually recursively traverse all children, btCompoundShape can nested more then 1 level deep
 	///so we should add a 'refreshManifolds' in the btCollisionAlgorithm
 	{
 		int i;
 		btManifoldArray manifoldArray;
-#ifdef USE_LOCAL_STACK 
+	#ifdef USE_LOCAL_STACK 
 		btPersistentManifold localManifolds[4];
 		manifoldArray.initializeFromBuffer(&localManifolds,0,4);
-#endif
+	#endif
 		btSimplePairArray& pairs = m_childCollisionAlgorithmCache->getOverlappingPairArray();
 		for (i=0;i<pairs.size();i++)
 		{
@@ -360,18 +368,7 @@ void btCompoundCompoundCollisionAlgorithm::processCollision (const btCollisionOb
 			}
 		}
 	}
-
-
 	
-
-	btCompoundCompoundLeafCallback callback(col0ObjWrap,col1ObjWrap,this->m_dispatcher,dispatchInfo,resultOut,this->m_childCollisionAlgorithmCache,m_sharedManifold);
-
-
-	const btTransform	xform=col0ObjWrap->getWorldTransform().inverse()*col1ObjWrap->getWorldTransform();
-	MycollideTT(tree0->m_root,tree1->m_root,xform,&callback, resultOut->m_closestPointDistanceThreshold);
-
-	//printf("#compound-compound child/leaf overlap =%d                      \r",callback.m_numOverlapPairs);
-
 	//remove non-overlapping child pairs
 
 	{
@@ -451,6 +448,3 @@ btScalar	btCompoundCompoundCollisionAlgorithm::calculateTimeOfImpact(btCollision
 	return 0.f;
 
 }
-
-
-
