@@ -25,6 +25,7 @@ subject to the following restrictions:
 #include "btCapsuleShape.h"
 #include "btConvexHullShape.h"
 #include "btConvexPointCloudShape.h"
+#include "btSphereSegmentShape.h"
 
 ///not supported on IBM SDK, until we fix the alignment of btVector3
 #if defined (__CELLOS_LV2__) && defined (__SPU__)
@@ -288,6 +289,39 @@ btVector3 btConvexShape::localGetSupportVertexWithoutMarginNonVirtual (const btV
 		int numPoints = convexHullShape->getNumPoints ();
 		return convexHullSupport (localDir, points, numPoints,convexHullShape->getLocalScalingNV());
 	}
+	case CUSTOM_CONVEX_SHAPE_TYPE:
+	{
+		btSphereSegmentShape* shape = (btSphereSegmentShape*)this;
+		btVector3 halfExtents = shape->getImplicitShapeDimensions();
+		btScalar radius = halfExtents[1];
+		btVector3 v = localDir;
+		btScalar vLenSq = v.length2();
+		btVector3 p(0,0,0);
+
+		if (vLenSq > SIMD_EPSILON) {
+			p = v * (radius / btSqrt(vLenSq));
+			btScalar halfWidth = halfExtents[0];
+
+			if (btFabs(p.x()) > halfWidth) {
+				p.setX(0);
+				btScalar pLenSq = p.length2();
+
+				btScalar sideRadius = btSqrt(radius*radius - halfWidth*halfWidth);
+
+				if (pLenSq > SIMD_EPSILON) {
+					p *= sideRadius / btSqrt(pLenSq);
+					p.setX(halfWidth);
+				}
+				else {
+					p.setX(v.x() < 0 ? -halfWidth : halfWidth);
+					p.setY(sideRadius);
+					p.setZ(0);
+				}
+			}
+		}
+
+		return p;
+	}
     default:
 #ifndef __SPU__
 		return this->localGetSupportingVertexWithoutMargin (localDir);
@@ -355,6 +389,11 @@ btScalar btConvexShape::getMarginNonVirtual () const
 		btPolyhedralConvexShape* convexHullShape = (btPolyhedralConvexShape*)this;
 		return convexHullShape->getMarginNV();
 	}
+	case CUSTOM_CONVEX_SHAPE_TYPE:
+	{
+		btSphereSegmentShape* shape = (btSphereSegmentShape*)this;
+		return shape->getMarginNV();
+	}
     default:
 #ifndef __SPU__
 		return this->getMargin ();
@@ -384,7 +423,7 @@ void btConvexShape::getAabbNonVirtual (const btTransform& t, btVector3& aabbMin,
     }
 	break;
 	case CYLINDER_SHAPE_PROXYTYPE:
-	/* fall through */
+	case CUSTOM_CONVEX_SHAPE_TYPE:
 	case BOX_SHAPE_PROXYTYPE:
 	{
 		btBoxShape* convexShape = (btBoxShape*)this;

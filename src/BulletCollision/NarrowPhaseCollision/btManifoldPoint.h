@@ -44,6 +44,14 @@ enum btContactPointFlags
 	BT_CONTACT_FLAG_FRICTION_ANCHOR = 16,
 };
 
+enum btContactPointType
+{
+	BT_CP_TYPE_NONE = 0,
+	BT_CP_TYPE_VERTEX,
+	BT_CP_TYPE_EDGE,
+	BT_CP_TYPE_FACE
+};
+
 /// ManifoldContactPoint collects and maintains persistent contactpoints.
 /// used to improve stability and performance of rigidbody dynamics response.
 class btManifoldPoint
@@ -60,7 +68,8 @@ class btManifoldPoint
 				m_contactCFM(0.f),
 				m_contactERP(0.f),
 				m_frictionCFM(0.f),
-				m_lifeTime(0)
+				m_lifeTime(0),
+				m_cpType(BT_CP_TYPE_NONE)
 			{
 			}
 
@@ -85,7 +94,8 @@ class btManifoldPoint
 					m_contactCFM(0.f),
 					m_contactERP(0.f),
 					m_frictionCFM(0.f),
-					m_lifeTime(0)
+					m_lifeTime(0),
+					m_cpType(BT_CP_TYPE_NONE)
 			{
 				
 			}
@@ -142,7 +152,7 @@ class btManifoldPoint
 			btVector3		m_lateralFrictionDir1;
 			btVector3		m_lateralFrictionDir2;
 
-
+			btContactPointType m_cpType;
 
 
 			btScalar getDistance() const

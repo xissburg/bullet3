@@ -215,6 +215,7 @@ sources = ["examples/pybullet/pybullet.c"]\
 +["src/BulletCollision/CollisionShapes/btConvexPointCloudShape.cpp"]\
 +["src/BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.cpp"]\
 +["src/BulletCollision/CollisionShapes/btUniformScalingShape.cpp"]\
++["src/BulletCollision/CollisionShapes/btSphereSegmentShape.cpp"]\
 +["src/BulletCollision/Gimpact/btContactProcessing.cpp"]\
 +["src/BulletCollision/Gimpact/btGImpactQuantizedBvh.cpp"]\
 +["src/BulletCollision/Gimpact/btTriangleShapeEx.cpp"]\

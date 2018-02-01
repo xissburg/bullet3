@@ -63,7 +63,7 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionShapes/btTriangleCallback.h"
 #include "BulletCollision/CollisionShapes/btTriangleMeshShape.h"
 #include "BulletCollision/CollisionShapes/btStaticPlaneShape.h"
-
+#include "BulletCollision/CollisionShapes/btSphereSegmentShape.h"
 
 
 btCollisionWorld::btCollisionWorld(btDispatcher* dispatcher,btBroadphaseInterface* pairCache, btCollisionConfiguration* collisionConfiguration)
@@ -1414,6 +1414,15 @@ void btCollisionWorld::debugDrawObject(const btTransform& worldTransform, const 
                 getDebugDrawer()->drawCylinder(radius, halfHeight, upAxis, worldTransform, color);
                 break;
             }
+		case CUSTOM_CONVEX_SHAPE_TYPE:
+			{
+				const btSphereSegmentShape* sphereSegment = static_cast<const btSphereSegmentShape*>(shape);
+				int upAxis = sphereSegment->getUpAxis();
+				btScalar radius = sphereSegment->getRadius();
+                btScalar halfHeight = sphereSegment->getHalfExtentsWithMargin()[upAxis];
+				getDebugDrawer()->drawCylinder(radius, halfHeight, upAxis, worldTransform, color);
+				break;
+			}
 
         case STATIC_PLANE_PROXYTYPE:
             {

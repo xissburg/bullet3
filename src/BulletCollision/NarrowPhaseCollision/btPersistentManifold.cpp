@@ -16,6 +16,7 @@ subject to the following restrictions:
 
 #include "btPersistentManifold.h"
 #include "LinearMath/btTransform.h"
+#include "BulletCollision/CollisionDispatch/btCollisionObject.h"
 
 btScalar					gContactBreakingThreshold = btScalar(0.02);
 ContactDestroyedCallback	gContactDestroyedCallback = 0;

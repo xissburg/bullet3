@@ -347,6 +347,22 @@ public:
 		m_collisionFlags |=CF_HAS_CONTACT_STIFFNESS_DAMPING;
 	}
 	
+	void	setContactStiffness(btScalar stiffness)
+	{
+		m_updateRevision++;
+		m_contactStiffness = stiffness;
+		
+		m_collisionFlags |=CF_HAS_CONTACT_STIFFNESS_DAMPING;
+	}
+	
+	void	setContactDamping(btScalar damping)
+	{
+		m_updateRevision++;
+		m_contactDamping = damping;
+		
+		m_collisionFlags |=CF_HAS_CONTACT_STIFFNESS_DAMPING;
+	}
+	
 	btScalar	getContactStiffness() const
 	{
 		return m_contactStiffness;
