@@ -133,6 +133,8 @@ bool SphereTriangleDetector::collide(const btVector3& sphereCenter,btVector3 &po
 				// Could be inside one of the contact capsules
 				btScalar contactCapsuleRadiusSqr = radiusWithThreshold*radiusWithThreshold;
 				btVector3 nearestOnEdge;
+				btScalar shortestDistanceSqr = FLT_MAX;
+
 				for (int i = 0; i < m_triangle->getNumEdges(); i++) {
 
 					btVector3 pa;
@@ -141,12 +143,12 @@ bool SphereTriangleDetector::collide(const btVector3& sphereCenter,btVector3 &po
 					m_triangle->getEdge(i, pa, pb);
 
 					btScalar distanceSqr = SegmentSqrDistance(pa, pb, sphereCenter, nearestOnEdge);
-					if (distanceSqr < contactCapsuleRadiusSqr) {
+					if (distanceSqr < contactCapsuleRadiusSqr && distanceSqr < shortestDistanceSqr) {
 						// Yep, we're inside a capsule
 						hasContact = true;
+						shortestDistanceSqr = distanceSqr;
 						contactPoint = nearestOnEdge;
 					}
-
 				}
 			}
 		}
