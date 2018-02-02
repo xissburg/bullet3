@@ -296,31 +296,28 @@ btVector3 btConvexShape::localGetSupportVertexWithoutMarginNonVirtual (const btV
 		btScalar radius = halfExtents[1];
 		btVector3 v = localDir;
 		btScalar vLenSq = v.length2();
-		btVector3 p(0,0,0);
 
-		if (vLenSq > SIMD_EPSILON) {
-			p = v * (radius / btSqrt(vLenSq));
-			btScalar halfWidth = halfExtents[0];
-
-			if (btFabs(p.x()) > halfWidth) {
-				p.setX(0);
-				btScalar pLenSq = p.length2();
-
-				btScalar sideRadius = btSqrt(radius*radius - halfWidth*halfWidth);
-
-				if (pLenSq > SIMD_EPSILON) {
-					p *= sideRadius / btSqrt(pLenSq);
-					p.setX(halfWidth);
-				}
-				else {
-					p.setX(v.x() < 0 ? -halfWidth : halfWidth);
-					p.setY(sideRadius);
-					p.setZ(0);
-				}
-			}
+		if (vLenSq <= SIMD_EPSILON) {
+			return btVector3(0,0,0);
 		}
 
-		return p;
+		btVector3 p = v * (radius / btSqrt(vLenSq));
+		btScalar halfWidth = halfExtents[0];
+
+		if (btFabs(p.x()) < halfWidth) {
+			return p;
+		}
+
+		btScalar s = btSqrt(v.y() * v.y() + v.z() * v.z());
+		btScalar sideRadius = btSqrt(radius*radius - halfWidth*halfWidth);
+		btScalar rx = v.x() < 0 ? -halfWidth : halfWidth;
+
+		if (s > SIMD_EPSILON) {
+			btScalar d = sideRadius / s;  
+			return btVector3(rx, v.y() * d, v.z() * d);
+		}
+
+		return btVector3(rx, sideRadius, 0);
 	}
     default:
 #ifndef __SPU__

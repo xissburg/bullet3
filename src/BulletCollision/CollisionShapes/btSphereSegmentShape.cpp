@@ -93,31 +93,23 @@ SIMD_FORCE_INLINE btVector3 SphereSegmentLocalSupportX(const btVector3& halfExte
 {
     btScalar radius = halfExtents[1];
     btScalar vLenSq = v.length2();
-    btVector3 p(0,0,0);
+    btVector3 p = v * (radius / btSqrt(vLenSq));
+	btScalar halfWidth = halfExtents[0];
 
-    if (vLenSq > SIMD_EPSILON) {
-        p = v * (radius / btSqrt(vLenSq));
-        btScalar halfWidth = halfExtents[0];
+	if (btFabs(p.x()) < halfWidth) {
+		return p;
+	}
 
-        if (btFabs(p.x()) > halfWidth) {
-            p.setX(0);
-            btScalar pLenSq = p.length2();
+	btScalar s = btSqrt(v.y() * v.y() + v.z() * v.z());
+	btScalar sideRadius = btSqrt(radius*radius - halfWidth*halfWidth);
+	btScalar rx = v.x() < 0 ? -halfWidth : halfWidth;
 
-            btScalar sideRadius = btSqrt(radius*radius - halfWidth*halfWidth);
+	if (s > SIMD_EPSILON) {
+		btScalar d = sideRadius / s;  
+		return btVector3(rx, v.y() * d, v.z() * d);
+	}
 
-            if (pLenSq > SIMD_EPSILON) {
-                p *= sideRadius / btSqrt(pLenSq);
-                p.setX(halfWidth);
-            }
-            else {
-                p.setX(v.x() < 0 ? -halfWidth : halfWidth);
-                p.setY(sideRadius);
-                p.setZ(0);
-            }
-        }
-    }
-
-    return p;
+	return btVector3(rx, sideRadius, 0);
 }
 
 btVector3 btSphereSegmentShape::localGetSupportingVertexWithoutMargin(const btVector3& vec)const
