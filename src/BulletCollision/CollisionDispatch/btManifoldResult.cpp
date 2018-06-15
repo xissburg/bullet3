@@ -70,12 +70,34 @@ btScalar	btManifoldResult::calculateCombinedRestitution(const btCollisionObject*
 
 btScalar	btManifoldResult::calculateCombinedContactDamping(const btCollisionObject* body0,const btCollisionObject* body1)
 {
-    return body0->getContactDamping() + body1->getContactDamping();
+	if ((body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) &&
+		(body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING)) {
+		return 1/(1/body0->getContactDamping() + 1/body1->getContactDamping());
+	}
+	else if (body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
+		return body0->getContactDamping();
+	}
+	else if (body1->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
+		return body1->getContactDamping();
+	}
+
+	return 1e10;
 }
 
 btScalar	btManifoldResult::calculateCombinedContactStiffness(const btCollisionObject* body0,const btCollisionObject* body1)
 {
-    return body0->getContactStiffness() + body1->getContactStiffness();
+	if ((body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) &&
+		(body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING)) {
+		return 1/(1/body0->getContactStiffness() + 1/body1->getContactStiffness());
+	}
+	else if (body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
+		return body0->getContactStiffness();
+	}
+	else if (body1->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
+		return body1->getContactStiffness();
+	}
+
+	return 1e10;
 }
 
 

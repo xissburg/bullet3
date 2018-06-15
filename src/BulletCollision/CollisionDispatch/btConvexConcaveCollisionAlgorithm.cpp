@@ -180,15 +180,16 @@ partId, int triangleIndex)
 
 		btVector3 localNormal;
 		tm.calcNormal(localNormal);
-		btVector3 worldNormal = triObWrap.getWorldTransform().getBasis() * localNormal;
+		const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
+		btVector3 worldNormal = triBasis * localNormal;
 				
 		for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
 		{
 			bool pointOnEdge = false;
 			btContactPointType cpType = BT_CP_TYPE_NONE;
 			btManifoldPoint& pt = tempManifold->getContactPoint(i);
-			btVector3 pB = swapped ? pt.m_localPointB : pt.m_localPointA;
-			btVector3 contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
+			const btVector3& pB = swapped ? pt.m_localPointB : pt.m_localPointA;
+			const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
 
 			// Only add points that either lie on the triangle or in the voronoi region of the edges
 			for (int j = 0; j < 3; ++j) 
@@ -204,7 +205,7 @@ partId, int triangleIndex)
 				btScalar distance = btSqrt(p.dot(p));
 
 				btVector3 edgeNormal = edge.cross(localNormal);
-				edgeNormal = triObWrap.getWorldTransform().getBasis() * edgeNormal;
+				edgeNormal = triBasis * edgeNormal;
 				
 				// Check if the point on the triangle is near the edge and also if it is not immediately inside
 				// the triangle, i.e., the contactNormal has to be pointing outside the plane with normal edge X normal.
@@ -226,6 +227,7 @@ partId, int triangleIndex)
 					else 
 					{
 						btScalar c = contactNormal.dot(worldNormal);
+						// TODO: store the sine of the angle instead in the triangle info map or smth and get rid of this btAcos
 						btScalar a = btAcos(c);
 						
 						// Add it if it's in the edge's voronoi region. Tolerance might require tunning. Small values 

@@ -412,8 +412,14 @@ public:
 		m_spinAngle = btNormalizeAngle(m_spinAngle + m_spin * timeStep);
 	}
 
-	inline btScalar getSpinAngle() {
+	inline btScalar getSpinAngle() const
+	{
 		return m_spinAngle;
+	}
+
+	inline void setSpinAngle(btScalar spinAngle)
+	{
+		m_spinAngle = spinAngle;
 	}
 
 	btVector3 getVelocityInLocalPoint(const btVector3& rel_pos) const
