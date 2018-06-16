@@ -6,5 +6,6 @@ xcode/
 xcode4/
 xcode4ios/
 .DS_Store
+.vscode
 
 *.pyc
