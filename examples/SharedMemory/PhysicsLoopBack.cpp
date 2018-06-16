@@ -180,6 +180,12 @@ void PhysicsLoopBack::getCachedVisualShapeInformation(struct b3VisualShapeInform
 	return m_data->m_physicsClient->getCachedVisualShapeInformation(visualShapesInfo);
 }
 
+void PhysicsLoopBack::getCachedCollisionShapeInformation(struct b3CollisionShapeInformation* collisionShapesInfo)
+{
+	return m_data->m_physicsClient->getCachedCollisionShapeInformation(collisionShapesInfo);
+}
+
+
 void PhysicsLoopBack::getCachedVREvents(struct b3VREventsData* vrEventsData)
 {
 	return m_data->m_physicsClient->getCachedVREvents(vrEventsData);
@@ -205,6 +211,11 @@ void PhysicsLoopBack::getCachedRaycastHits(struct b3RaycastInformation* raycastH
 	return m_data->m_physicsClient->getCachedRaycastHits(raycastHits);
 }
 
+void PhysicsLoopBack::getCachedMassMatrix(int dofCountCheck, double* massMatrix)
+{
+	m_data->m_physicsClient->getCachedMassMatrix(dofCountCheck,massMatrix);
+}
+
 void PhysicsLoopBack::setTimeOut(double timeOutInSeconds)
 {
 	m_data->m_physicsClient->setTimeOut(timeOutInSeconds);
@@ -212,5 +223,21 @@ void PhysicsLoopBack::setTimeOut(double timeOutInSeconds)
 double PhysicsLoopBack::getTimeOut() const
 {
 	return m_data->m_physicsClient->getTimeOut();
+}
+
+bool PhysicsLoopBack::getCachedUserData(int bodyUniqueId, int linkIndex, int userDataId, struct b3UserDataValue &valueOut) const {
+	return m_data->m_physicsClient->getCachedUserData(bodyUniqueId, linkIndex, userDataId, valueOut);
+}
+
+int PhysicsLoopBack::getCachedUserDataId(int bodyUniqueId, int linkIndex, const char *key) const {
+	return m_data->m_physicsClient->getCachedUserDataId(bodyUniqueId, linkIndex, key);
+}
+
+int PhysicsLoopBack::getNumUserData(int bodyUniqueId, int linkIndex) const {
+	return m_data->m_physicsClient->getNumUserData(bodyUniqueId, linkIndex);
+}
+
+void PhysicsLoopBack::getUserDataInfo(int bodyUniqueId, int linkIndex, int userDataIndex, const char **keyOut, int *userDataIdOut) const {
+	m_data->m_physicsClient->getUserDataInfo(bodyUniqueId, linkIndex, userDataIndex, keyOut, userDataIdOut);
 }
 

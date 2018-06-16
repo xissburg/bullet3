@@ -7,7 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "PhysicsServerExampleBullet2.h"
-
+#include "../CommonInterfaces/CommonGUIHelperInterface.h"
 #include "../CommonInterfaces/CommonExampleInterface.h"
 #include "InProcessMemory.h"
 
@@ -21,15 +21,15 @@ public:
     
     InProcessPhysicsClientSharedMemoryMainThread(int argc, char* argv[], bool useInProcessMemory)
     {
-        int newargc = argc+2;
+        int newargc = argc+3;
         char** newargv = (char**)malloc(sizeof(void*)*newargc);
-        for (int i=0;i<argc;i++)
-            newargv[i] = argv[i];
+		char* t0 = (char*)"--unused";
+        newargv[0] = t0;
+		for (int i=0;i<argc;i++)
+            newargv[i+1] = argv[i];
+        newargv[argc+1]=(char*)"--logtostderr";
+		newargv[argc+2]=(char*)"--start_demo_name=Physics Server";
         
-        char* t0 = (char*)"--logtostderr";
-        char* t1 = (char*)"--start_demo_name=Physics Server";
-        newargv[argc] = t0;
-        newargv[argc+1] = t1;
         m_data = btCreateInProcessExampleBrowserMainThread(newargc,newargv, useInProcessMemory);
         SharedMemoryInterface* shMem = btGetSharedMemoryInterfaceMainThread(m_data);
         
@@ -83,18 +83,18 @@ public:
     
 };
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThread(int argc, char* argv[])
+B3_SHARED_API b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThread(int argc, char* argv[])
 {
     InProcessPhysicsClientSharedMemoryMainThread* cl = new InProcessPhysicsClientSharedMemoryMainThread(argc, argv, 1);
-    cl->setSharedMemoryKey(SHARED_MEMORY_KEY);
+    cl->setSharedMemoryKey(SHARED_MEMORY_KEY+1);
     cl->connect();
     return (b3PhysicsClientHandle ) cl;
 }
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThreadSharedMemory(int argc, char* argv[])
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThreadSharedMemory(int argc, char* argv[])
 {
     InProcessPhysicsClientSharedMemoryMainThread* cl = new InProcessPhysicsClientSharedMemoryMainThread(argc, argv, 0);
-    cl->setSharedMemoryKey(SHARED_MEMORY_KEY);
+    cl->setSharedMemoryKey(SHARED_MEMORY_KEY+1);
     cl->connect();
     return (b3PhysicsClientHandle ) cl;
 }
@@ -112,12 +112,13 @@ public:
 	{
 		int newargc = argc+2;
 		m_newargv = (char**)malloc(sizeof(void*)*newargc);
-		for (int i=0;i<argc;i++)
-			m_newargv[i] = argv[i];
+		char* t0 = (char*)"--unused";
+		m_newargv[0] = t0;
 
-		char* t0 = (char*)"--logtostderr";
+		for (int i=0;i<argc;i++)
+			m_newargv[i+1] = argv[i];
+		
 		char* t1 = (char*)"--start_demo_name=Physics Server";
-		m_newargv[argc] = t0;
 		m_newargv[argc+1] = t1;
 		m_data = btCreateInProcessExampleBrowser(newargc,m_newargv, useInProcessMemory);
 		SharedMemoryInterface* shMem = btGetSharedMemoryInterface(m_data);
@@ -133,7 +134,7 @@ public:
 
 };
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnect(int argc, char* argv[])
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnect(int argc, char* argv[])
 {	
 	
 	InProcessPhysicsClientSharedMemory* cl = new InProcessPhysicsClientSharedMemory(argc, argv, 1);
@@ -141,7 +142,7 @@ b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnect(int argc, char* a
     cl->connect();
 	return (b3PhysicsClientHandle ) cl;
 }
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectSharedMemory(int argc, char* argv[])
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectSharedMemory(int argc, char* argv[])
 {	
 	
 	InProcessPhysicsClientSharedMemory* cl = new InProcessPhysicsClientSharedMemory(argc, argv, 0);
@@ -157,15 +158,19 @@ class InProcessPhysicsClientExistingExampleBrowser : public PhysicsClientSharedM
 	b3Clock m_clock;
 	unsigned long long int m_prevTime;
 public:
-	InProcessPhysicsClientExistingExampleBrowser (struct GUIHelperInterface* guiHelper)
+	InProcessPhysicsClientExistingExampleBrowser (struct GUIHelperInterface* guiHelper, bool useInProcessMemory, bool skipGraphicsUpdate)
 	{
-		
-
-		m_sharedMem = new InProcessMemory;
+        m_sharedMem=0;
 		CommonExampleOptions options(guiHelper);
-		options.m_sharedMem = m_sharedMem;
-			
-		m_physicsServerExample = PhysicsServerCreateFuncBullet2(options);
+        
+        if (useInProcessMemory)
+        {
+            m_sharedMem = new InProcessMemory;
+            options.m_sharedMem = m_sharedMem;
+        }
+        
+        options.m_skipGraphicsUpdate = skipGraphicsUpdate;
+        m_physicsServerExample = PhysicsServerCreateFuncBullet2(options);
 		m_physicsServerExample ->initPhysics();
 		m_physicsServerExample ->resetCamera();
 		setSharedMemoryInterface(m_sharedMem);
@@ -184,7 +189,6 @@ public:
 	 // return non-null if there is a status, nullptr otherwise
     virtual const struct SharedMemoryStatus* processServerStatus()
     {
-		printf("updating graphics!\n");
 		m_physicsServerExample->updateGraphics();
 
 		unsigned long long int curTime = m_clock.getTimeMicroseconds();
@@ -249,11 +253,49 @@ int b3InProcessMouseButtonCallback(b3PhysicsClientHandle clientHandle, int butto
 }
 
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect(void* guiHelperPtr)
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect(void* guiHelperPtr)
 {
+    static DummyGUIHelper noGfx;
+    
 	GUIHelperInterface* guiHelper = (GUIHelperInterface*) guiHelperPtr;
-	InProcessPhysicsClientExistingExampleBrowser* cl  = new InProcessPhysicsClientExistingExampleBrowser(guiHelper);
-	//InProcessPhysicsClientFromGuiHelper* cl = new InProcessPhysicsClientFromGuiHelper(guiHelper);
+    if (!guiHelper)
+    {
+        guiHelper = &noGfx;
+    }
+    bool useInprocessMemory = true;
+    bool skipGraphicsUpdate = false;
+    
+	InProcessPhysicsClientExistingExampleBrowser* cl  = new InProcessPhysicsClientExistingExampleBrowser(guiHelper,useInprocessMemory,skipGraphicsUpdate);
+	
     cl->connect();
 	return (b3PhysicsClientHandle ) cl;
+}
+
+extern int gSharedMemoryKey;
+
+B3_SHARED_API    b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect3(void* guiHelperPtr, int sharedMemoryKey)
+{
+    static DummyGUIHelper noGfx;
+    
+	gSharedMemoryKey = sharedMemoryKey;
+    GUIHelperInterface* guiHelper = (GUIHelperInterface*) guiHelperPtr;
+    if (!guiHelper)
+    {
+        guiHelper = &noGfx;
+    }
+    bool useInprocessMemory = false;
+    bool skipGraphicsUpdate = true;
+    InProcessPhysicsClientExistingExampleBrowser* cl  = new InProcessPhysicsClientExistingExampleBrowser(guiHelper, useInprocessMemory, skipGraphicsUpdate);
+
+	cl->setSharedMemoryKey(sharedMemoryKey+1);
+    cl->connect();
+	//backward compatiblity
+	gSharedMemoryKey = SHARED_MEMORY_KEY;
+    return (b3PhysicsClientHandle ) cl;
+}
+
+//backward compatiblity
+B3_SHARED_API    b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect2(void* guiHelperPtr)
+{
+	return b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect3(guiHelperPtr, SHARED_MEMORY_KEY);
 }

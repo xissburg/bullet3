@@ -28,6 +28,7 @@ subject to the following restrictions:
 #include "LinearMath/btIDebugDraw.h"
 #include "BulletCollision/NarrowPhaseCollision/btSubSimplexConvexCast.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObjectWrapper.h"
+#include "BulletCollision/CollisionShapes/btSdfCollisionShape.h"
 #include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
 
 btConvexConcaveCollisionAlgorithm::btConvexConcaveCollisionAlgorithm( const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap,const btCollisionObjectWrapper* body1Wrap,bool isSwapped)
@@ -296,7 +297,7 @@ partId, int triangleIndex)
 		{
 			m_resultOut->setBody1Wrap(tmpWrap);
 		}
-		
+
 
 
 		colAlgo->~btCollisionAlgorithm();
@@ -307,7 +308,7 @@ partId, int triangleIndex)
 
 
 
-void	btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTriangle,const btDispatcherInfo& dispatchInfo,const btCollisionObjectWrapper* convexBodyWrap, const btCollisionObjectWrapper* triBodyWrap, btManifoldResult* resultOut)
+void	btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTriangle, const btDispatcherInfo& dispatchInfo, const btCollisionObjectWrapper* convexBodyWrap, const btCollisionObjectWrapper* triBodyWrap, btManifoldResult* resultOut)
 {
 	m_convexBodyWrap = convexBodyWrap;
 	m_triBodyWrap = triBodyWrap;
@@ -321,14 +322,14 @@ void	btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTr
 	convexInTriangleSpace = m_triBodyWrap->getWorldTransform().inverse() * m_convexBodyWrap->getWorldTransform();
 	const btCollisionShape* convexShape = static_cast<const btCollisionShape*>(m_convexBodyWrap->getCollisionShape());
 	//CollisionShape* triangleShape = static_cast<btCollisionShape*>(triBody->m_collisionShape);
-	convexShape->getAabb(convexInTriangleSpace,m_aabbMin,m_aabbMax);
-	btScalar extraMargin = collisionMarginTriangle+ resultOut->m_closestPointDistanceThreshold;
-	
-	btVector3 extra(extraMargin,extraMargin,extraMargin);
+	convexShape->getAabb(convexInTriangleSpace, m_aabbMin, m_aabbMax);
+	btScalar extraMargin = collisionMarginTriangle + resultOut->m_closestPointDistanceThreshold;
+
+	btVector3 extra(extraMargin, extraMargin, extraMargin);
 
 	m_aabbMax += extra;
 	m_aabbMin -= extra;
-	
+
 }
 
 void btConvexConcaveCollisionAlgorithm::clearCache()
@@ -337,58 +338,122 @@ void btConvexConcaveCollisionAlgorithm::clearCache()
 
 }
 
-void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjectWrapper* body0Wrap,const btCollisionObjectWrapper* body1Wrap,const btDispatcherInfo& dispatchInfo,btManifoldResult* resultOut)
+void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, const btDispatcherInfo& dispatchInfo, btManifoldResult* resultOut)
 {
 	BT_PROFILE("btConvexConcaveCollisionAlgorithm::processCollision");
-	
+
 	const btCollisionObjectWrapper* convexBodyWrap = m_isSwapped ? body1Wrap : body0Wrap;
 	const btCollisionObjectWrapper* triBodyWrap = m_isSwapped ? body0Wrap : body1Wrap;
 
 	if (triBodyWrap->getCollisionShape()->isConcave())
 	{
-
-
-		
-		const btConcaveShape* concaveShape = static_cast<const btConcaveShape*>( triBodyWrap->getCollisionShape());
-		
-		if (convexBodyWrap->getCollisionShape()->isConvex())
+		if (triBodyWrap->getCollisionShape()->getShapeType() == SDF_SHAPE_PROXYTYPE)
 		{
-			btScalar collisionMarginTriangle = concaveShape->getMargin();
-					
-			// Use a clean manifold to insert the current contact points
-			btPersistentManifold* originalManifold = m_btConvexTriangleCallback.m_manifoldPtr;
-			originalManifold->setBodies(convexBodyWrap->getCollisionObject(),triBodyWrap->getCollisionObject());
-
-			btPersistentManifold* tempManifold = m_dispatcher->getNewManifold(originalManifold->getBody0(),originalManifold->getBody1());
-			resultOut->setPersistentManifold(tempManifold);
-
-			m_btConvexTriangleCallback.setTimeStepAndCounters(collisionMarginTriangle,dispatchInfo,convexBodyWrap,triBodyWrap,resultOut);
-
-			concaveShape->processAllTriangles( &m_btConvexTriangleCallback,m_btConvexTriangleCallback.getAabbMin(),m_btConvexTriangleCallback.getAabbMax());
-			
-			// Reset to the original manifold and insert all points into it the same way it's done in btManifoldResult::addContactPoint
-			resultOut->setPersistentManifold(originalManifold);
-
-			for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
+			btSdfCollisionShape* sdfShape = (btSdfCollisionShape*)triBodyWrap->getCollisionShape();
+			if (convexBodyWrap->getCollisionShape()->isConvex())
 			{
-				btManifoldPoint& pt = tempManifold->getContactPoint(i);
-				int insertIndex = originalManifold->getCacheEntry(pt);
-				
-				if (insertIndex >= 0)
+
+				btConvexShape* convex = (btConvexShape*)convexBodyWrap->getCollisionShape();
+				btAlignedObjectArray<btVector3> queryVertices;
+
+				if (convex->isPolyhedral())
 				{
-					originalManifold->replaceContactPoint(pt,insertIndex);
-				} else
-				{
-					originalManifold->addManifoldPoint(pt);
+					btPolyhedralConvexShape* poly = (btPolyhedralConvexShape*)convex;
+					for (int v = 0; v < poly->getNumVertices(); v++)
+					{
+						btVector3 vtx;
+						poly->getVertex(v, vtx);
+						queryVertices.push_back(vtx);
+					}
 				}
+				btScalar maxDist = SIMD_EPSILON;
+
+				if (convex->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
+				{
+					queryVertices.push_back(btVector3(0, 0, 0));
+					btSphereShape* sphere = (btSphereShape*)convex;
+					maxDist = sphere->getRadius() + SIMD_EPSILON;
+
+				}
+				if (queryVertices.size())
+				{
+					resultOut->setPersistentManifold(m_btConvexTriangleCallback.m_manifoldPtr);
+					//m_btConvexTriangleCallback.m_manifoldPtr->clearManifold();
+
+					btPolyhedralConvexShape* poly = (btPolyhedralConvexShape*)convex;
+					for (int v = 0; v < queryVertices.size(); v++)
+					{
+						const btVector3& vtx = queryVertices[v];
+						btVector3 vtxWorldSpace = convexBodyWrap->getWorldTransform()*vtx;
+						btVector3 vtxInSdf = triBodyWrap->getWorldTransform().invXform(vtxWorldSpace);
+
+						btVector3 normalLocal;
+						btScalar dist;
+						if (sdfShape->queryPoint(vtxInSdf, dist, normalLocal))
+						{
+							if (dist <= maxDist)
+							{
+								normalLocal.safeNormalize();
+								btVector3 normal = triBodyWrap->getWorldTransform().getBasis()*normalLocal;
+
+								if (convex->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
+								{
+									btSphereShape* sphere = (btSphereShape*)convex;
+									dist -= sphere->getRadius();
+									vtxWorldSpace -= sphere->getRadius()*normal;
+
+								}
+								resultOut->addContactPoint(normal,vtxWorldSpace-normal*dist, dist);
+							}
+						}
+					}
+					resultOut->refreshContactPoints();
+				}
+
 			}
+		} else
+		{
+			const btConcaveShape* concaveShape = static_cast<const btConcaveShape*>( triBodyWrap->getCollisionShape());
+		
+			if (convexBodyWrap->getCollisionShape()->isConvex())
+			{
+				btScalar collisionMarginTriangle = concaveShape->getMargin();
+				
+				// Use a clean manifold to insert the current contact points
+				btPersistentManifold* originalManifold = m_btConvexTriangleCallback.m_manifoldPtr;
+				originalManifold->setBodies(convexBodyWrap->getCollisionObject(),triBodyWrap->getCollisionObject());
 
-			m_dispatcher->releaseManifold(tempManifold);
+				btPersistentManifold* tempManifold = m_dispatcher->getNewManifold(originalManifold->getBody0(),originalManifold->getBody1());
+				resultOut->setPersistentManifold(tempManifold);
 
-			resultOut->refreshContactPoints();
+				m_btConvexTriangleCallback.setTimeStepAndCounters(collisionMarginTriangle,dispatchInfo,convexBodyWrap,triBodyWrap,resultOut);
 
-			m_btConvexTriangleCallback.clearWrapperData();
+				concaveShape->processAllTriangles( &m_btConvexTriangleCallback,m_btConvexTriangleCallback.getAabbMin(),m_btConvexTriangleCallback.getAabbMax());
+			
+				// Reset to the original manifold and insert all points into it the same way it's done in btManifoldResult::addContactPoint
+				resultOut->setPersistentManifold(originalManifold);
+
+				for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
+				{
+					btManifoldPoint& pt = tempManifold->getContactPoint(i);
+					int insertIndex = originalManifold->getCacheEntry(pt);
+					
+					if (insertIndex >= 0)
+					{
+						originalManifold->replaceContactPoint(pt,insertIndex);
+					} else
+					{
+						originalManifold->addManifoldPoint(pt);
+					}
+				}
+
+				m_dispatcher->releaseManifold(tempManifold);
+
+				resultOut->refreshContactPoints();
+
+				m_btConvexTriangleCallback.clearWrapperData();
 	
+			}
 		}
 	
 	}

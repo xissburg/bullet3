@@ -22,7 +22,12 @@ subject to the following restrictions:
 ///This is to allow MaterialCombiner/Custom Friction/Restitution values
 ContactAddedCallback		gContactAddedCallback=0;
 
-
+CalculateCombinedCallback		gCalculateCombinedRestitutionCallback = &btManifoldResult::calculateCombinedRestitution;
+CalculateCombinedCallback		gCalculateCombinedFrictionCallback = &btManifoldResult::calculateCombinedFriction;
+CalculateCombinedCallback		gCalculateCombinedRollingFrictionCallback = &btManifoldResult::calculateCombinedRollingFriction;
+CalculateCombinedCallback		gCalculateCombinedSpinningFrictionCallback = &btManifoldResult::calculateCombinedSpinningFriction;
+CalculateCombinedCallback		gCalculateCombinedContactDampingCallback = &btManifoldResult::calculateCombinedContactDamping;
+CalculateCombinedCallback		gCalculateCombinedContactStiffnessCallback = &btManifoldResult::calculateCombinedContactStiffness;
 
 btScalar	btManifoldResult::calculateCombinedRollingFriction(const btCollisionObject* body0,const btCollisionObject* body1)
 {
@@ -70,34 +75,25 @@ btScalar	btManifoldResult::calculateCombinedRestitution(const btCollisionObject*
 
 btScalar	btManifoldResult::calculateCombinedContactDamping(const btCollisionObject* body0,const btCollisionObject* body1)
 {
-	if ((body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) &&
-		(body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING)) {
-		return 1/(1/body0->getContactDamping() + 1/body1->getContactDamping());
-	}
-	else if (body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
-		return body0->getContactDamping();
-	}
-	else if (body1->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
-		return body1->getContactDamping();
-	}
-
-	return 1e10;
+	btScalar d0 = body0->getContactDamping();
+    btScalar d1 = body1->getContactDamping();
+    
+    btScalar tmp0 = btScalar(1)/d0;
+    btScalar tmp1 = btScalar(1)/d1;
+    btScalar combinedDamping = btScalar(1) / (tmp0+tmp1);
+    return combinedDamping;
 }
 
 btScalar	btManifoldResult::calculateCombinedContactStiffness(const btCollisionObject* body0,const btCollisionObject* body1)
 {
-	if ((body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) &&
-		(body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING)) {
-		return 1/(1/body0->getContactStiffness() + 1/body1->getContactStiffness());
-	}
-	else if (body0->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
-		return body0->getContactStiffness();
-	}
-	else if (body1->getCollisionFlags() & btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) {
-		return body1->getContactStiffness();
-	}
-
-	return 1e10;
+    
+    btScalar s0 = body0->getContactStiffness();
+    btScalar s1 = body1->getContactStiffness();
+    
+    btScalar tmp0 = btScalar(1)/s0;
+    btScalar tmp1 = btScalar(1)/s1;
+    btScalar combinedStiffness = btScalar(1) / (tmp0+tmp1);
+    return combinedStiffness;
 }
 
 
@@ -149,16 +145,16 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 	
 	int insertIndex = m_manifoldPtr->getCacheEntry(newPt);
 
-	newPt.m_combinedFriction = calculateCombinedFriction(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
-	newPt.m_combinedRestitution = calculateCombinedRestitution(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
-	newPt.m_combinedRollingFriction = calculateCombinedRollingFriction(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
-    newPt.m_combinedSpinningFriction = calculateCombinedSpinningFriction(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+	newPt.m_combinedFriction = gCalculateCombinedFrictionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+	newPt.m_combinedRestitution = gCalculateCombinedRestitutionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+	newPt.m_combinedRollingFriction = gCalculateCombinedRollingFrictionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+	newPt.m_combinedSpinningFriction = gCalculateCombinedSpinningFrictionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
 	
 	if (    (m_body0Wrap->getCollisionObject()->getCollisionFlags()& btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING) ||
             (m_body1Wrap->getCollisionObject()->getCollisionFlags()& btCollisionObject::CF_HAS_CONTACT_STIFFNESS_DAMPING))
     {
-        newPt.m_combinedContactDamping1 = calculateCombinedContactDamping(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
-        newPt.m_combinedContactStiffness1 = calculateCombinedContactStiffness(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+		newPt.m_combinedContactDamping1 = gCalculateCombinedContactDampingCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
+		newPt.m_combinedContactStiffness1 = gCalculateCombinedContactStiffnessCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
         newPt.m_contactPointFlags |= BT_CONTACT_FLAG_CONTACT_STIFFNESS_DAMPING;
     }
 
@@ -214,3 +210,4 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 		gContactStartedCallback(m_manifoldPtr);
 	}
 }
+

@@ -25,7 +25,9 @@ protected:
 	bool processVisualShapeData(const struct SharedMemoryCommand& orgCommand);
 	
     void processBodyJointInfo(int bodyUniqueId, const struct SharedMemoryStatus& serverCmd);
-    
+
+	void processAddUserData(const struct SharedMemoryStatus& serverCmd);
+
 	void postProcessStatus(const struct SharedMemoryStatus& serverCmd);
 
 	void resetData();
@@ -91,6 +93,8 @@ public:
 
 	virtual void getCachedVisualShapeInformation(struct b3VisualShapeInformation* visualShapesInfo);
 	
+	virtual void getCachedCollisionShapeInformation(struct b3CollisionShapeInformation* collisionShapesInfo);
+
 	virtual void getCachedVREvents(struct b3VREventsData* vrEventsData);
 
 	virtual void getCachedKeyboardEvents(struct b3KeyboardEventsData* keyboardEventsData);
@@ -99,6 +103,8 @@ public:
 
 	virtual void getCachedRaycastHits(struct b3RaycastInformation* raycastHits);
 
+	virtual void getCachedMassMatrix(int dofCountCheck, double* massMatrix);
+
 	//the following APIs are for internal use for visualization:
 	virtual bool connect(struct GUIHelperInterface* guiHelper);
 	virtual void renderScene();
@@ -106,6 +112,11 @@ public:
 
 	virtual void setTimeOut(double timeOutInSeconds);
 	virtual double getTimeOut() const;
+
+    virtual bool getCachedUserData(int bodyUniqueId, int linkIndex, int userDataId, struct b3UserDataValue &valueOut) const;
+    virtual int getCachedUserDataId(int bodyUniqueId, int linkIndex, const char *key) const;
+    virtual int getNumUserData(int bodyUniqueId, int linkIndex) const;
+    virtual void getUserDataInfo(int bodyUniqueId, int linkIndex, int userDataIndex, const char **keyOut, int *userDataIdOut) const;
 };
 
 #endif //PHYSICS_DIRECT_H

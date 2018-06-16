@@ -10,13 +10,17 @@ extern "C" {
 
 
 ///think more about naming. The b3ConnectPhysicsLoopback
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnect(int argc, char* argv[]);
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectSharedMemory(int argc, char* argv[]);
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnect(int argc, char* argv[]);
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectSharedMemory(int argc, char* argv[]);
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThread(int argc, char* argv[]);
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThreadSharedMemory(int argc, char* argv[]);
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThread(int argc, char* argv[]);
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerAndConnectMainThreadSharedMemory(int argc, char* argv[]);
 
-b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect(void* guiHelperPtr);
+B3_SHARED_API	b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect(void* guiHelperPtr);
+//create a shared memory physics server, with a DummyGUIHelper (no graphics)
+B3_SHARED_API    b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect2(void* guiHelperPtr);
+//create a shared memory physics server, with a DummyGUIHelper (no graphics) and allow to set shared memory key
+B3_SHARED_API    b3PhysicsClientHandle b3CreateInProcessPhysicsServerFromExistingExampleBrowserAndConnect3(void* guiHelperPtr, int sharedMemoryKey);
 
 ///ignore the following APIs, they are for internal use for example browser
 void b3InProcessRenderSceneInternal(b3PhysicsClientHandle clientHandle);

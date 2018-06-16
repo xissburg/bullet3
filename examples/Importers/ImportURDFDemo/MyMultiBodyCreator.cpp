@@ -25,6 +25,8 @@ m_guiHelper(guiHelper)
     m_mb2urdfLink.resize(totalNumJoints+1,-2);
 
     m_bulletMultiBody = new btMultiBody(totalNumJoints,mass,localInertiaDiagonal,isFixedBase,canSleep);
+	//if (canSleep)
+	//	m_bulletMultiBody->goToSleep();
     return m_bulletMultiBody;
 }
 
@@ -33,7 +35,7 @@ class btRigidBody* MyMultiBodyCreator::allocateRigidBody(int urdfLinkIndex, btSc
     btRigidBody::btRigidBodyConstructionInfo rbci(mass, 0, colShape, localInertiaDiagonal);
     rbci.m_startWorldTransform = initialWorldTrans;
     m_rigidBody = new btRigidBody(rbci);
-	m_rigidBody->forceActivationState(DISABLE_DEACTIVATION);
+	
 	
     return m_rigidBody;
 }
@@ -140,7 +142,7 @@ class btGeneric6DofSpring2Constraint* MyMultiBodyCreator::createRevoluteJoint(in
             dof6->setLinearUpperLimit(btVector3(0,0,0));
 
             dof6->setAngularUpperLimit(btVector3(0,0,-1));
-            dof6->setAngularLowerLimit(btVector3(0,0,0));
+            dof6->setAngularLowerLimit(btVector3(0,0,1));
 
         }
     };
@@ -180,7 +182,7 @@ class btGeneric6DofSpring2Constraint* MyMultiBodyCreator::createFixedJoint(int u
 
     dof6->setAngularLowerLimit(btVector3(0,0,0));
     dof6->setAngularUpperLimit(btVector3(0,0,0));
-
+	m_6DofConstraints.push_back(dof6);
 	return dof6;
 }
    
@@ -188,6 +190,10 @@ class btGeneric6DofSpring2Constraint* MyMultiBodyCreator::createFixedJoint(int u
 
 void MyMultiBodyCreator::addLinkMapping(int urdfLinkIndex, int mbLinkIndex) 
 {
+	if (m_mb2urdfLink.size()<(mbLinkIndex+1))
+	{
+		m_mb2urdfLink.resize((mbLinkIndex+1),-2);
+	}
 //    m_urdf2mbLink[urdfLinkIndex] = mbLinkIndex;
     m_mb2urdfLink[mbLinkIndex] = urdfLinkIndex;
 }
