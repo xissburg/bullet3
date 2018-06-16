@@ -625,8 +625,6 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstr
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
 
-	solverConstraint.m_originalConstraint = 0;
-
 	if (body0)
 	{
 		solverConstraint.m_contactNormal1 = normalAxis;
@@ -761,8 +759,6 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 	
 	solverConstraint.m_useSplitSpinBodyA = true;
 	solverConstraint.m_useSplitSpinBodyB = true;
-	
-	solverConstraint.m_originalConstraint = 0;
 	
 	{
 		btVector3 ftorqueAxis1 = -normalAxis1;
@@ -1839,7 +1835,8 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 			btScalar residual;
 			
 			// TODO: get rid of virtual function call (??)
-			constraint.m_originalConstraint->prepareSolverConstraint(constraint);
+			btTypedConstraint* originalConstraint = (btTypedConstraint*)constraint.m_originalContactPoint;
+			originalConstraint->prepareSolverConstraint(constraint);
 
 			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
 				residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[constraint.m_solverBodyIdA],m_tmpSolverBodyPool[constraint.m_solverBodyIdB],constraint);

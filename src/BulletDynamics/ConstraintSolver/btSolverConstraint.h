@@ -73,8 +73,6 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 
 	bool m_useSplitSpinBodyA;
 	bool m_useSplitSpinBodyB;
-	
-	btTypedConstraint* m_originalConstraint;
 };
 
 typedef btAlignedObjectArray<btSolverConstraint>	btConstraintArray;
