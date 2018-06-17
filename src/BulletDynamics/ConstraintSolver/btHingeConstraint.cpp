@@ -216,7 +216,7 @@ void	btHingeConstraint::buildJacobian()
 {
 	if (m_useSolveConstraintObsolete)
 	{
-		m_appliedImpulse = btScalar(0.);
+		internalSetAppliedImpulse(0);
 		m_accMotorImpulse = btScalar(0.);
 
 		if (!m_angularOnly)

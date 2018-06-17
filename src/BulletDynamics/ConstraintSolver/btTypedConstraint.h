@@ -20,6 +20,7 @@ subject to the following restrictions:
 #include "LinearMath/btScalar.h"
 #include "btSolverConstraint.h"
 #include "BulletDynamics/Dynamics/btRigidBody.h"
+#include "LinearMath/btHashMap.h"
 
 #ifdef BT_USE_DOUBLE_PRECISION
 #define btTypedConstraintData2		btTypedConstraintDoubleData
@@ -103,7 +104,7 @@ ATTRIBUTE_ALIGNED16(class) btTypedConstraint : public btTypedObject
 protected:
 	btRigidBody&	m_rbA;
 	btRigidBody&	m_rbB;
-	btScalar	m_appliedImpulse;
+	btHashMap<btHashInt, btScalar>	m_appliedImpulseMap; // maps a constraint row to its last applied impulse
 	btScalar	m_dbgDrawSize;
 	btJointFeedback*	m_jointFeedback;
 
@@ -187,14 +188,22 @@ public:
 	virtual void getInfo2 (btConstraintInfo2* info)=0;
 
 	///internal method used by the constraint solver, don't use them directly
-	void	internalSetAppliedImpulse(btScalar appliedImpulse)
+	void	internalSetAppliedImpulse(btScalar appliedImpulse, int index = 0)
 	{
-		m_appliedImpulse = appliedImpulse;
+		m_appliedImpulseMap.insert(index, appliedImpulse);
 	}
 	///internal method used by the constraint solver, don't use them directly
-	btScalar	internalGetAppliedImpulse()
+	btScalar	internalGetAppliedImpulse(int index = 0)
 	{
-		return m_appliedImpulse;
+		btScalar* impulse = m_appliedImpulseMap.find(index);
+
+		if (impulse) 
+		{
+			return *impulse;
+		}
+
+		m_appliedImpulseMap.insert(index, 0);
+		return 0;
 	}
 
 
@@ -306,10 +315,10 @@ public:
 
 	///getAppliedImpulse is an estimated total applied impulse.
 	///This feedback could be used to determine breaking constraints or playing sounds.
-	btScalar	getAppliedImpulse() const
+	btScalar	getAppliedImpulse(int index = 0)
 	{
 		btAssert(m_needsFeedback);
-		return m_appliedImpulse;
+		return internalGetAppliedImpulse(index);
 	}
 
 	btTypedConstraintType getConstraintType () const
@@ -337,7 +346,7 @@ public:
 		m_useSplitSpinBodyB = useSplitSpin;
 	}
 	
-	virtual void prepareSolverConstraint(btSolverConstraint& solverConstraint) { }
+	virtual void prepareSolverConstraint(btSolverConstraint& solverConstraint, btSolverBody& bodyA, btSolverBody& bodyB) { }
 
 	void setDbgDrawSize(btScalar dbgDrawSize)
 	{

@@ -1401,8 +1401,8 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 	const btRigidBody& rbA = constraint->getRigidBodyA();
 	const btRigidBody& rbB = constraint->getRigidBodyB();
 
-    const btSolverBody* bodyAPtr = &m_tmpSolverBodyPool[solverBodyIdA];
-    const btSolverBody* bodyBPtr = &m_tmpSolverBodyPool[solverBodyIdB];
+    btSolverBody* bodyAPtr = &m_tmpSolverBodyPool[solverBodyIdA];
+    btSolverBody* bodyBPtr = &m_tmpSolverBodyPool[solverBodyIdB];
 
 	int overrideNumSolverIterations = constraint->getOverrideNumSolverIterations() > 0 ? constraint->getOverrideNumSolverIterations() : infoGlobal.m_numIterations;
 	if (overrideNumSolverIterations>m_maxOverrideNumSolverIterations)
@@ -1512,14 +1512,16 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 			btVector3 externalTorqueImpulseB = bodyBPtr->m_originalBody ?bodyBPtr->m_externalTorqueImpulse : btVector3(0,0,0);
 
 			btVector3 angularVelocityA, angularVelocityB;
+			bool useSplitSpinA = solverConstraint.m_useSplitSpinBodyA && bodyAPtr->m_useSplitSpin;
+			bool useSplitSpinB = solverConstraint.m_useSplitSpinBodyB && bodyBPtr->m_useSplitSpin;
 
-			if (solverConstraint.m_useSplitSpinBodyA && rbA.useSplitSpin()) {
+			if (useSplitSpinA) {
 				angularVelocityA = rbA.getAngularVelocityWithSpin()+externalTorqueImpulseA;
 			} else {
 				angularVelocityA = rbA.getAngularVelocity()+externalTorqueImpulseA;
 			}
 
-			if (solverConstraint.m_useSplitSpinBodyB && rbB.useSplitSpin()) {
+			if (useSplitSpinB) {
 				angularVelocityB = rbB.getAngularVelocityWithSpin()+externalTorqueImpulseB;
 			} else {
 				angularVelocityB = rbB.getAngularVelocity()+externalTorqueImpulseB;
@@ -1538,7 +1540,28 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 			btScalar	penetrationImpulse = positionalError*solverConstraint.m_jacDiagABInv;
 			btScalar	velocityImpulse = velocityError *solverConstraint.m_jacDiagABInv;
 			solverConstraint.m_rhs = penetrationImpulse+velocityImpulse;
-			solverConstraint.m_appliedImpulse = 0.f;
+			
+			if (infoGlobal.m_solverMode & SOLVER_USE_WARMSTARTING)
+			{
+				btScalar appliedImpulse = constraint->internalGetAppliedImpulse(j) * infoGlobal.m_warmstartingFactor;
+				solverConstraint.m_appliedImpulse = appliedImpulse;
+
+				// Apply impulse spliting between non-spin and spin impulses
+				if (useSplitSpinA) {
+					bodyAPtr->internalApplyImpulseWithSpinSplit(solverConstraint.m_contactNormal1*rbA.getInvMass()*rbA.getLinearFactor(),solverConstraint.m_angularComponentA,appliedImpulse);
+				} else {
+					bodyAPtr->internalApplyImpulse(solverConstraint.m_contactNormal1*rbA.getInvMass()*rbA.getLinearFactor(),solverConstraint.m_angularComponentA,appliedImpulse);
+				}
+
+				if (useSplitSpinB) {
+					bodyBPtr->internalApplyImpulseWithSpinSplit(-solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),-solverConstraint.m_angularComponentB,-appliedImpulse);
+				} else {
+					bodyBPtr->internalApplyImpulse(-solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),-solverConstraint.m_angularComponentB,-appliedImpulse);
+				}
+			} else
+			{
+				solverConstraint.m_appliedImpulse = 0.f;
+			}
 		}
 	}
 }
@@ -1551,7 +1574,6 @@ void btSequentialImpulseConstraintSolver::convertJoints(btTypedConstraint** cons
 	{
 		btTypedConstraint* constraint = constraints[j];
 		constraint->buildJacobian();
-		constraint->internalSetAppliedImpulse(0.0f);
 	}
 
 	int totalNumRows = 0;
@@ -1834,15 +1856,17 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 		{
 			btScalar residual;
 			
-			// TODO: get rid of virtual function call (??)
 			btTypedConstraint* originalConstraint = (btTypedConstraint*)constraint.m_originalContactPoint;
-			originalConstraint->prepareSolverConstraint(constraint);
+			btSolverBody& bodyA = m_tmpSolverBodyPool[constraint.m_solverBodyIdA];
+			btSolverBody& bodyB = m_tmpSolverBodyPool[constraint.m_solverBodyIdB];
+			// TODO: get rid of virtual function call (??)
+			originalConstraint->prepareSolverConstraint(constraint, bodyA, bodyB);
 
 			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
-				residual = resolveSingleConstraintRowGenericSplitSpin(m_tmpSolverBodyPool[constraint.m_solverBodyIdA],m_tmpSolverBodyPool[constraint.m_solverBodyIdB],constraint);
+				residual = resolveSingleConstraintRowGenericSplitSpin(bodyA,bodyB,constraint);
 			}
 			else {
-				residual = resolveSingleConstraintRowGeneric(m_tmpSolverBodyPool[constraint.m_solverBodyIdA],m_tmpSolverBodyPool[constraint.m_solverBodyIdB],constraint);
+				residual = resolveSingleConstraintRowGeneric(bodyA,bodyB,constraint);
 			}
 
 			leastSquaresResidual += residual*residual;
@@ -2056,10 +2080,20 @@ void btSequentialImpulseConstraintSolver::writeBackContacts(int iBegin, int iEnd
 
 void btSequentialImpulseConstraintSolver::writeBackJoints(int iBegin, int iEnd, const btContactSolverInfo& infoGlobal)
 {
+	btTypedConstraint* constr = NULL;
+	int row = 0;
+	
 	for (int j=iBegin; j<iEnd; j++)
 	{
 		const btSolverConstraint& solverConstr = m_tmpSolverNonContactConstraintPool[j];
-		btTypedConstraint* constr = (btTypedConstraint*)solverConstr.m_originalContactPoint;
+
+		btTypedConstraint* c = (btTypedConstraint*)solverConstr.m_originalContactPoint;
+
+		if (c != constr) {
+			constr = c;
+			row = 0;
+		}
+
 		btJointFeedback* fb = constr->getJointFeedback();
 		if (fb)
 		{
@@ -2070,7 +2104,8 @@ void btSequentialImpulseConstraintSolver::writeBackJoints(int iBegin, int iEnd, 
 
 		}
 
-		constr->internalSetAppliedImpulse(solverConstr.m_appliedImpulse);
+		constr->internalSetAppliedImpulse(solverConstr.m_appliedImpulse, row++);
+		
 		if (btFabs(solverConstr.m_appliedImpulse)>=constr->getBreakingImpulseThreshold())
 		{
 			constr->setEnabled(false);

@@ -31,7 +31,6 @@ m_needsFeedback(false),
 m_overrideNumSolverIterations(-1),
 m_rbA(rbA),
 m_rbB(getFixedBody()),
-m_appliedImpulse(btScalar(0.)),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
 m_jointFeedback(0),
 m_useSplitSpinBodyA(false),
@@ -50,7 +49,6 @@ m_needsFeedback(false),
 m_overrideNumSolverIterations(-1),
 m_rbA(rbA),
 m_rbB(rbB),
-m_appliedImpulse(btScalar(0.)),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
 m_jointFeedback(0),
 m_useSplitSpinBodyA(false),
@@ -133,7 +131,9 @@ const char*	btTypedConstraint::serialize(void* dataBuffer, btSerializer* seriali
 	tcd->m_userConstraintId =m_userConstraintId;
 	tcd->m_userConstraintType =m_userConstraintType;
 
-	tcd->m_appliedImpulse = m_appliedImpulse;
+	// TODO: store applied impulse map in data
+	const btScalar* appliedImpulse = m_appliedImpulseMap.find(0);
+	tcd->m_appliedImpulse = appliedImpulse ? *appliedImpulse : 0;
 	tcd->m_dbgDrawSize = m_dbgDrawSize;
 
 	tcd->m_disableCollisionsBetweenLinkedBodies = false;

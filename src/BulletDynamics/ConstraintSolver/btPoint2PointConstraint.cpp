@@ -44,7 +44,7 @@ void	btPoint2PointConstraint::buildJacobian()
 
 	///we need it for both methods
 	{
-		m_appliedImpulse = btScalar(0.);
+		internalSetAppliedImpulse(0);
 
 		btVector3	normal(0,0,0);
 

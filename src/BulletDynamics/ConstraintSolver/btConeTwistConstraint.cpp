@@ -264,7 +264,7 @@ void	btConeTwistConstraint::buildJacobian()
 {
 	if (m_useSolveConstraintObsolete)
 	{
-		m_appliedImpulse = btScalar(0.);
+		internalSetAppliedImpulse(0);
 		m_accTwistLimitImpulse = btScalar(0.);
 		m_accSwingLimitImpulse = btScalar(0.);
 		m_accMotorImpulse = btVector3(0.,0.,0.);
@@ -340,8 +340,8 @@ void	btConeTwistConstraint::solveConstraintObsolete(btSolverBody& bodyA,btSolver
 				//positional error (zeroth order error)
 				btScalar depth = -(pivotAInW - pivotBInW).dot(normal); //this is the error projected on the normal
 				btScalar impulse = depth*tau/timeStep  * jacDiagABInv -  rel_vel * jacDiagABInv;
-				m_appliedImpulse += impulse;
-				
+				internalSetAppliedImpulse(internalGetAppliedImpulse() + impulse);
+
 				btVector3 ftorqueAxis1 = rel_pos1.cross(normal);
 				btVector3 ftorqueAxis2 = rel_pos2.cross(normal);
 				bodyA.internalApplyImpulse(normal*m_rbA.getInvMass(), m_rbA.getInvInertiaTensorWorld()*ftorqueAxis1,impulse);
