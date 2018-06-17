@@ -345,8 +345,6 @@ public:
 	{
 		m_useSplitSpinBodyB = useSplitSpin;
 	}
-	
-	virtual void prepareSolverConstraint(btSolverConstraint& solverConstraint, btSolverBody& bodyA, btSolverBody& bodyB) { }
 
 	void setDbgDrawSize(btScalar dbgDrawSize)
 	{

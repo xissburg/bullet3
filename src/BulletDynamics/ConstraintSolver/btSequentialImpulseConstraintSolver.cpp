@@ -39,6 +39,8 @@ int		gNumSplitImpulseRecoveries = 0;
 
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 
+btPrepareSolverConstraint gPrepareSolverConstraint = 0;
+
 //#define VERBOSE_RESIDUAL_PRINTF 1
 ///This is the scalar reference implementation of solving a single constraint row, the innerloop of the Projected Gauss Seidel/Sequential Impulse constraint solver
 ///Below are optional SSE2 and SSE4/FMA3 versions. We assume most hardware has SSE2. For SSE4/FMA3 we perform a CPU feature check.
@@ -1856,11 +1858,13 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 		{
 			btScalar residual;
 			
-			btTypedConstraint* originalConstraint = (btTypedConstraint*)constraint.m_originalContactPoint;
 			btSolverBody& bodyA = m_tmpSolverBodyPool[constraint.m_solverBodyIdA];
 			btSolverBody& bodyB = m_tmpSolverBodyPool[constraint.m_solverBodyIdB];
-			// TODO: get rid of virtual function call (??)
-			originalConstraint->prepareSolverConstraint(constraint, bodyA, bodyB);
+
+			if (gPrepareSolverConstraint)
+			{
+				gPrepareSolverConstraint(constraint, bodyA, bodyB);
+			}
 
 			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
 				residual = resolveSingleConstraintRowGenericSplitSpin(bodyA,bodyB,constraint);

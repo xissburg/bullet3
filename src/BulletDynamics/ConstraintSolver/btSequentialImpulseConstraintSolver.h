@@ -28,6 +28,9 @@ class btCollisionObject;
 #include "BulletDynamics/ConstraintSolver/btConstraintSolver.h"
 
 typedef btSimdScalar(*btSingleConstraintRowSolver)(btSolverBody&, btSolverBody&, const btSolverConstraint&);
+typedef void (*btPrepareSolverConstraint)(btSolverConstraint&, btSolverBody&, btSolverBody&);
+
+extern btPrepareSolverConstraint gPrepareSolverConstraint;
 
 ///The btSequentialImpulseConstraintSolver is a fast SIMD implementation of the Projected Gauss Seidel (iterative LCP) method.
 ATTRIBUTE_ALIGNED16(class) btSequentialImpulseConstraintSolver : public btConstraintSolver
