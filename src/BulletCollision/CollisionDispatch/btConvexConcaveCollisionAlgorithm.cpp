@@ -115,8 +115,16 @@ partId, int triangleIndex)
 	
 	if (m_convexBodyWrap->getCollisionShape()->isConvex())
 	{
-		btTriangleShape tm(triangle[0],triangle[1],triangle[2]);	
+		btVector3 localTranslation = -triangle[0];
+		btVector3 translation = m_triBodyWrap->getWorldTransform() * localTranslation;
+
+		btTriangleShape tm(btVector3(0,0,0), triangle[1]+localTranslation, triangle[2]+localTranslation);	
 		tm.setMargin(m_collisionMarginTriangle);
+
+		btTransform convexBodyTransform = m_convexBodyWrap->m_worldTransform;
+		convexBodyTransform.setOrigin(convexBodyTransform.getOrigin() + translation);
+
+		btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexBodyTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
 		
 		// Add points to a temporary manifold in the convex-triangle collision algorithm
 		// and then only add points that lie on the triangle face or in the voronoi region
@@ -126,35 +134,32 @@ partId, int triangleIndex)
 		m_resultOut->setPersistentManifold(tempManifold);
 		
 		btCollisionObjectWrapper triObWrap(m_triBodyWrap,&tm,m_triBodyWrap->getCollisionObject(),m_triBodyWrap->getWorldTransform(),partId,triangleIndex);//correct transform?
-		btCollisionAlgorithm* colAlgo = 0;
+		btCollisionAlgorithm* colAlgo = ci.m_dispatcher1->findAlgorithm(&convexBodyWrap, &triObWrap, tempManifold, 
+										m_resultOut->m_closestPointDistanceThreshold > 0 ? BT_CLOSEST_POINT_ALGORITHMS : BT_CONTACT_POINT_ALGORITHMS);
 		
-		if (m_resultOut->m_closestPointDistanceThreshold > 0)
-		{
-			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, 0, BT_CLOSEST_POINT_ALGORITHMS);
-		}
-		else
-		{
-			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, tempManifold, BT_CONTACT_POINT_ALGORITHMS);
-		}
 		const btCollisionObjectWrapper* tmpWrap = 0;
-
-		// TODO: check whether this is really necessary
-		bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
+		const btCollisionObjectWrapper* tmpConvexWrap = 0;
 
 		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
 		{
 			tmpWrap = m_resultOut->getBody0Wrap();
 			m_resultOut->setBody0Wrap(&triObWrap);
 			m_resultOut->setShapeIdentifiersA(partId,triangleIndex);
+
+			tmpConvexWrap = m_resultOut->getBody1Wrap();
+			m_resultOut->setBody1Wrap(&convexBodyWrap);
 		}
 		else
 		{
 			tmpWrap = m_resultOut->getBody1Wrap();
 			m_resultOut->setBody1Wrap(&triObWrap);
 			m_resultOut->setShapeIdentifiersB(partId,triangleIndex);
+
+			tmpConvexWrap = m_resultOut->getBody0Wrap();
+			m_resultOut->setBody0Wrap(&convexBodyWrap);
 		}
 
-		colAlgo->processCollision(m_convexBodyWrap,&triObWrap,*m_dispatchInfoPtr,m_resultOut);
+		colAlgo->processCollision(&convexBodyWrap,&triObWrap,*m_dispatchInfoPtr,m_resultOut);
 
 		// reset back to original manifold and only add valid points to it
 		m_resultOut->setPersistentManifold(originalManifold);
@@ -183,13 +188,15 @@ partId, int triangleIndex)
 		tm.calcNormal(localNormal);
 		const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
 		btVector3 worldNormal = triBasis * localNormal;
-				
+		
+		bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
+
 		for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
 		{
 			bool pointOnEdge = false;
 			btContactPointType cpType = BT_CP_TYPE_NONE;
 			btManifoldPoint& pt = tempManifold->getContactPoint(i);
-			const btVector3& pB = swapped ? pt.m_localPointB : pt.m_localPointA;
+			const btVector3& pA = swapped ? pt.m_localPointB : pt.m_localPointA;
 			const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
 
 			// Only add points that either lie on the triangle or in the voronoi region of the edges
@@ -198,9 +205,9 @@ partId, int triangleIndex)
 				btVector3 e0, e1;
 				tm.getEdge(j, e0, e1);
 				btVector3 edge = e1 - e0;
-				btVector3 p = pB - e0;
+				btVector3 p = pA - e0;
 				
-				// Calc distance from pB to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
+				// Calc distance from pA to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
 				btScalar t = p.dot(edge) / edge.dot(edge);
 				p -= t * edge;
 				btScalar distance = btSqrt(p.dot(p));
@@ -261,6 +268,16 @@ partId, int triangleIndex)
 			if (cpType != BT_CP_TYPE_NONE)
 			{
 				pt.m_cpType = cpType;
+
+				if (swapped) {
+					pt.m_localPointB -= localTranslation;
+					pt.m_positionWorldOnB -= translation;
+				}
+				else {
+					pt.m_localPointA -= localTranslation;
+					pt.m_positionWorldOnA -= translation;
+				}
+
 				int insertIndex = originalManifold->getCacheEntry(pt);
 				
 				if (insertIndex >= 0)
@@ -293,12 +310,12 @@ partId, int triangleIndex)
 		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
 		{
 			m_resultOut->setBody0Wrap(tmpWrap);
+			m_resultOut->setBody1Wrap(tmpConvexWrap);
 		} else
 		{
 			m_resultOut->setBody1Wrap(tmpWrap);
+			m_resultOut->setBody0Wrap(tmpConvexWrap);
 		}
-
-
 
 		colAlgo->~btCollisionAlgorithm();
 		ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
