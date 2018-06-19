@@ -131,12 +131,12 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 	
 	if (isSwapped)
 	{
-		localA = m_body1Wrap->m_worldTransform.invXform(pointA );
-		localB = m_body0Wrap->m_worldTransform.invXform(pointInWorld);
+		localA = m_body1Wrap->getCollisionObject()->getWorldTransform().invXform(pointA );
+		localB = m_body0Wrap->getCollisionObject()->getWorldTransform().invXform(pointInWorld);
 	} else
 	{
-		localA = m_body0Wrap->m_worldTransform.invXform(pointA );
-		localB = m_body1Wrap->m_worldTransform.invXform(pointInWorld);
+		localA = m_body0Wrap->getCollisionObject()->getWorldTransform().invXform(pointA );
+		localB = m_body1Wrap->getCollisionObject()->getWorldTransform().invXform(pointInWorld);
 	}
 
 	btManifoldPoint newPt(localA,localB,normalOnBInWorld,depth);

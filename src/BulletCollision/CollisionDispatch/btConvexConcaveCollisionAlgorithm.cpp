@@ -121,10 +121,17 @@ partId, int triangleIndex)
 		btTriangleShape tm(btVector3(0,0,0), triangle[1]+localTranslation, triangle[2]+localTranslation);	
 		tm.setMargin(m_collisionMarginTriangle);
 
-		btTransform convexBodyTransform = m_convexBodyWrap->m_worldTransform;
-		convexBodyTransform.setOrigin(convexBodyTransform.getOrigin() + translation);
+		btTransform convexWrapTransform = m_convexBodyWrap->getWorldTransform();
+		convexWrapTransform.setOrigin(convexWrapTransform.getOrigin() + translation);
 
-		btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexBodyTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
+		const btTransform convexObjTransform = m_convexBodyWrap->getCollisionObject()->getWorldTransform();
+
+		btCollisionObject* convexObj = const_cast<btCollisionObject*>(m_convexBodyWrap->getCollisionObject());
+		btTransform t = convexObj->getWorldTransform();
+		t.setOrigin(t.getOrigin() + translation);
+		convexObj->setWorldTransform(t);
+
+		btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexWrapTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
 		
 		// Add points to a temporary manifold in the convex-triangle collision algorithm
 		// and then only add points that lie on the triangle face or in the voronoi region
@@ -163,7 +170,8 @@ partId, int triangleIndex)
 
 		// reset back to original manifold and only add valid points to it
 		m_resultOut->setPersistentManifold(originalManifold);
-		
+		convexObj->setWorldTransform(convexObjTransform);
+
 		const btBvhTriangleMeshShape* trimeshShape = 0;
 		const btCollisionShape* shape = m_triBodyWrap->getCollisionObject()->getCollisionShape();
 
@@ -271,12 +279,14 @@ partId, int triangleIndex)
 
 				if (swapped) {
 					pt.m_localPointB -= localTranslation;
-					pt.m_positionWorldOnB -= translation;
+					
 				}
 				else {
 					pt.m_localPointA -= localTranslation;
-					pt.m_positionWorldOnA -= translation;
 				}
+
+				pt.m_positionWorldOnB -= translation;
+				pt.m_positionWorldOnA -= translation;
 
 				int insertIndex = originalManifold->getCacheEntry(pt);
 				
