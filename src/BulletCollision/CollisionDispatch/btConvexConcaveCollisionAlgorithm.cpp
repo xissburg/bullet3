@@ -113,133 +113,171 @@ partId, int triangleIndex)
 	}
 #endif
 	
-	if (m_convexBodyWrap->getCollisionShape()->isConvex())
+	if (!m_convexBodyWrap->getCollisionShape()->isConvex())
 	{
-		btVector3 localTranslation = -triangle[0];
-		btVector3 translation = m_triBodyWrap->getWorldTransform() * localTranslation;
+		return;
+	}
+	
+	btVector3 localTranslation = -triangle[0];
+	btVector3 translation = m_triBodyWrap->getWorldTransform().getBasis() * localTranslation;
 
-		btTriangleShape tm(btVector3(0,0,0), triangle[1]+localTranslation, triangle[2]+localTranslation);	
-		tm.setMargin(m_collisionMarginTriangle);
+	btTriangleShape tm(btVector3(0,0,0), triangle[1]+localTranslation, triangle[2]+localTranslation);	
+	tm.setMargin(m_collisionMarginTriangle);
 
-		btTransform convexWrapTransform = m_convexBodyWrap->getWorldTransform();
-		convexWrapTransform.setOrigin(convexWrapTransform.getOrigin() + translation);
+	btTransform convexWrapTransform = m_convexBodyWrap->getWorldTransform();
+	convexWrapTransform.setOrigin(convexWrapTransform.getOrigin() + translation);
 
-		const btTransform convexObjTransform = m_convexBodyWrap->getCollisionObject()->getWorldTransform();
+	const btTransform convexObjTransform = m_convexBodyWrap->getCollisionObject()->getWorldTransform();
 
-		btCollisionObject* convexObj = const_cast<btCollisionObject*>(m_convexBodyWrap->getCollisionObject());
-		btTransform t = convexObj->getWorldTransform();
-		t.setOrigin(t.getOrigin() + translation);
-		convexObj->setWorldTransform(t);
+	btCollisionObject* convexObj = const_cast<btCollisionObject*>(m_convexBodyWrap->getCollisionObject());
+	btTransform t = convexObj->getWorldTransform();
+	t.setOrigin(t.getOrigin() + translation);
+	convexObj->setWorldTransform(t);
 
-		btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexWrapTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
-		
-		// Add points to a temporary manifold in the convex-triangle collision algorithm
-		// and then only add points that lie on the triangle face or in the voronoi region
-		// of the edges to the original manifold.
-		btPersistentManifold* originalManifold = m_resultOut->getPersistentManifold();
-		btPersistentManifold* tempManifold = m_dispatcher->getNewManifold(originalManifold->getBody0(),originalManifold->getBody1());
-		m_resultOut->setPersistentManifold(tempManifold);
-		
-		btCollisionObjectWrapper triObWrap(m_triBodyWrap,&tm,m_triBodyWrap->getCollisionObject(),m_triBodyWrap->getWorldTransform(),partId,triangleIndex);//correct transform?
-		btCollisionAlgorithm* colAlgo = ci.m_dispatcher1->findAlgorithm(&convexBodyWrap, &triObWrap, tempManifold, 
-										m_resultOut->m_closestPointDistanceThreshold > 0 ? BT_CLOSEST_POINT_ALGORITHMS : BT_CONTACT_POINT_ALGORITHMS);
-		
-		const btCollisionObjectWrapper* tmpWrap = 0;
-		const btCollisionObjectWrapper* tmpConvexWrap = 0;
+	btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexWrapTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
+	
+	// Add points to a temporary manifold in the convex-triangle collision algorithm
+	// and then only add points that lie on the triangle face or in the voronoi region
+	// of the edges to the original manifold.
+	btPersistentManifold* originalManifold = m_resultOut->getPersistentManifold();
+	btPersistentManifold* tempManifold = m_dispatcher->getNewManifold(originalManifold->getBody0(),originalManifold->getBody1());
+	m_resultOut->setPersistentManifold(tempManifold);
+	
+	btCollisionObjectWrapper triObWrap(m_triBodyWrap,&tm,m_triBodyWrap->getCollisionObject(),m_triBodyWrap->getWorldTransform(),partId,triangleIndex);//correct transform?
+	btCollisionAlgorithm* colAlgo = ci.m_dispatcher1->findAlgorithm(&convexBodyWrap, &triObWrap, tempManifold, 
+									m_resultOut->m_closestPointDistanceThreshold > 0 ? BT_CLOSEST_POINT_ALGORITHMS : BT_CONTACT_POINT_ALGORITHMS);
+	
+	const btCollisionObjectWrapper* tmpWrap = 0;
+	const btCollisionObjectWrapper* tmpConvexWrap = 0;
 
-		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
+	if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
+	{
+		tmpWrap = m_resultOut->getBody0Wrap();
+		m_resultOut->setBody0Wrap(&triObWrap);
+		m_resultOut->setShapeIdentifiersA(partId,triangleIndex);
+
+		tmpConvexWrap = m_resultOut->getBody1Wrap();
+		m_resultOut->setBody1Wrap(&convexBodyWrap);
+	}
+	else
+	{
+		tmpWrap = m_resultOut->getBody1Wrap();
+		m_resultOut->setBody1Wrap(&triObWrap);
+		m_resultOut->setShapeIdentifiersB(partId,triangleIndex);
+
+		tmpConvexWrap = m_resultOut->getBody0Wrap();
+		m_resultOut->setBody0Wrap(&convexBodyWrap);
+	}
+
+	colAlgo->processCollision(&convexBodyWrap,&triObWrap,*m_dispatchInfoPtr,m_resultOut);
+
+	// reset back to original manifold and only add valid points to it
+	m_resultOut->setPersistentManifold(originalManifold);
+	convexObj->setWorldTransform(convexObjTransform);
+
+	const btBvhTriangleMeshShape* trimeshShape = 0;
+	const btCollisionShape* shape = m_triBodyWrap->getCollisionObject()->getCollisionShape();
+
+	if (shape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE) 
+	{
+		trimeshShape = static_cast<const btScaledBvhTriangleMeshShape*>(shape)->getChildShape();
+	}
+	else if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) 
+	{
+		trimeshShape = static_cast<const btBvhTriangleMeshShape*>(shape);
+	}
+	
+	int hash = btGetHash(partId, triangleIndex);
+	const btTriangleInfo* info = trimeshShape->getTriangleInfoMap()->find(hash);
+
+	// TODO: check if info is null and if it is just add all points, or maybe embed this into the triangle
+	// mesh shape and calculate it on initialization.
+	btAssert(info);
+	
+	btScalar edgeAngles[] = {info->m_edgeV0V1Angle, info->m_edgeV1V2Angle, info->m_edgeV2V0Angle};
+	bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
+
+	btVector3 localNormal;
+	tm.calcNormal(localNormal);
+	if (!swapped) localNormal *= -1;
+	const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
+	btVector3 worldNormal = triBasis * localNormal;
+
+	const btScalar distToVertex = 0.01;
+
+	// tempManifold->getNumContacts() should be 1 since both objects are convex
+	for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
+	{
+		bool pointOnFace = true;
+		btContactPointType cpType = BT_CP_TYPE_NONE;
+		btManifoldPoint& pt = tempManifold->getContactPoint(i);
+		const btVector3& pA = swapped ? pt.m_localPointB : pt.m_localPointA;
+		const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
+
+		// Check if point lies in the voronoi region of edges or vertices
+		for (int j = 0; j < 3; ++j) 
 		{
-			tmpWrap = m_resultOut->getBody0Wrap();
-			m_resultOut->setBody0Wrap(&triObWrap);
-			m_resultOut->setShapeIdentifiersA(partId,triangleIndex);
+			btVector3 e0, e1;
+			tm.getEdge(j, e0, e1);
+			btVector3 edge = e1 - e0;
+			btVector3 p = pA - e0;
+			
+			// Calc distance from pA to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
+			btScalar t = p.dot(edge) / edge.dot(edge);
+			p -= t * edge;
+			btScalar distance = btSqrt(p.dot(p));
 
-			tmpConvexWrap = m_resultOut->getBody1Wrap();
-			m_resultOut->setBody1Wrap(&convexBodyWrap);
-		}
-		else
-		{
-			tmpWrap = m_resultOut->getBody1Wrap();
-			m_resultOut->setBody1Wrap(&triObWrap);
-			m_resultOut->setShapeIdentifiersB(partId,triangleIndex);
+			btVector3 edgeNormal = edge.cross(localNormal);
+			edgeNormal = triBasis * edgeNormal;
+			
+			// Check if the point on the triangle is near the edge and also if it is not immediately inside
+			// the triangle, i.e., the contactNormal has to be pointing outside the plane with normal edge X normal.
+			// Tolerances might require tunning.
+			if (distance < 0.001 + m_collisionMarginTriangle && contactNormal.dot(edgeNormal) > -SIMD_EPSILON) {
+				pointOnFace = false;
+				btScalar edgeAngle = edgeAngles[j];
 
-			tmpConvexWrap = m_resultOut->getBody0Wrap();
-			m_resultOut->setBody0Wrap(&convexBodyWrap);
-		}
-
-		colAlgo->processCollision(&convexBodyWrap,&triObWrap,*m_dispatchInfoPtr,m_resultOut);
-
-		// reset back to original manifold and only add valid points to it
-		m_resultOut->setPersistentManifold(originalManifold);
-		convexObj->setWorldTransform(convexObjTransform);
-
-		const btBvhTriangleMeshShape* trimeshShape = 0;
-		const btCollisionShape* shape = m_triBodyWrap->getCollisionObject()->getCollisionShape();
-
-		if (shape->getShapeType() == SCALED_TRIANGLE_MESH_SHAPE_PROXYTYPE) {
-            trimeshShape = static_cast<const btScaledBvhTriangleMeshShape*>(shape)->getChildShape();
-        }
-        else if (shape->getShapeType() == TRIANGLE_MESH_SHAPE_PROXYTYPE) 
-		{
-            trimeshShape = static_cast<const btBvhTriangleMeshShape*>(shape);
-        }
-		
-		int hash = btGetHash(partId, triangleIndex);
-		const btTriangleInfo* info = trimeshShape->getTriangleInfoMap()->find(hash);
-
-		// TODO: check if info is null and if it is just add all points, or maybe embed this into the triangle
-		// mesh shape and calculate it on initialization.
-		btAssert(info);
-		
-		btScalar edgeAngles[] = {info->m_edgeV0V1Angle, info->m_edgeV1V2Angle, info->m_edgeV2V0Angle};
-
-		btVector3 localNormal;
-		tm.calcNormal(localNormal);
-		const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
-		btVector3 worldNormal = triBasis * localNormal;
-		
-		bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
-
-		for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
-		{
-			bool pointOnEdge = false;
-			btContactPointType cpType = BT_CP_TYPE_NONE;
-			btManifoldPoint& pt = tempManifold->getContactPoint(i);
-			const btVector3& pA = swapped ? pt.m_localPointB : pt.m_localPointA;
-			const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
-
-			// Only add points that either lie on the triangle or in the voronoi region of the edges
-			for (int j = 0; j < 3; ++j) 
-			{
-				btVector3 e0, e1;
-				tm.getEdge(j, e0, e1);
-				btVector3 edge = e1 - e0;
-				btVector3 p = pA - e0;
-				
-				// Calc distance from pA to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
-				btScalar t = p.dot(edge) / edge.dot(edge);
-				p -= t * edge;
-				btScalar distance = btSqrt(p.dot(p));
-
-				btVector3 edgeNormal = edge.cross(localNormal);
-				edgeNormal = triBasis * edgeNormal;
-				
-				// Check if the point on the triangle is near the edge and also if it is not immediately inside
-				// the triangle, i.e., the contactNormal has to be pointing outside the plane with normal edge X normal.
-				// Tolerances might require tunning.
-				if (distance < 0.0001 + m_collisionMarginTriangle && contactNormal.dot(edgeNormal) > -SIMD_EPSILON) {
-					pointOnEdge = true;
-
-					btScalar edgeAngle = edgeAngles[j];
-
-					if (edgeAngle == SIMD_2_PI) // triangle has no adjacent faces
-					{ 
-						cpType = t < 0.001 || t > 0.999 ? cpType = BT_CP_TYPE_VERTEX : cpType = BT_CP_TYPE_EDGE;
-						break;
+				if (edgeAngle == SIMD_2_PI) // edge has no adjacent face
+				{ 
+					if (p.length2() < distToVertex*distToVertex || (pA - e1).length2() < distToVertex*distToVertex) 
+					{
+						cpType = BT_CP_TYPE_VERTEX;
 					}
-					else if (edgeAngle > 0) // ignore concave edges
-					{ 
-						continue;
-					} 
+					else 
+					{
+						cpType = BT_CP_TYPE_EDGE;
+					}
+				}
+				else if (edgeAngle <= 0) // ignore concave edges
+				{ 
+					bool pointOnVertex0 = (pA - e0).length2() < distToVertex*distToVertex;
+					bool pointOnVertex1 = (pA - e1).length2() < distToVertex*distToVertex;
+
+					if (pointOnVertex0 || pointOnVertex1) 
+					{
+						// This point must be within the limits of the voronoi region of both edges which share vertex e0						
+						// project contact normal onto plane orthogonal to edge
+						btVector3 e0n = triBasis * edge.normalized();
+						btVector3 n0 = contactNormal - e0n * contactNormal.dot(e0n);
+						btScalar c0 = n0.dot(worldNormal);
+						btScalar a0 = btAcos(c0);
+
+						int k = pointOnVertex0 ? (j-1)%3 : (j+1)%3;
+						btVector3 e10, e11;
+						tm.getEdge(k, e10, e11);
+						btVector3 edge1 = e11 - e10;
+						btVector3 e1n = triBasis * edge1.normalized();
+						btVector3 n1 = contactNormal - e1n * contactNormal.dot(e1n);
+						btScalar c1 = n1.dot(worldNormal);
+						btScalar a1 = btAcos(c1);
+
+						btScalar edgeAngle1 = edgeAngles[k];
+
+						if (a0 < -edgeAngle + 0.0174 && a1 < -edgeAngle1 + 0.0174)
+						{
+							cpType = BT_CP_TYPE_VERTEX;
+						}
+					}
 					else 
 					{
 						btScalar c = contactNormal.dot(worldNormal);
@@ -250,8 +288,7 @@ partId, int triangleIndex)
 						// seem to deteriorate contact persistence.
 						if (a < -edgeAngle + 0.08) 
 						{
-							// If t is too close to 0 or 1 it means the point is on a vertex
-							cpType = t < 0.001 || t > 0.999 ? cpType = BT_CP_TYPE_VERTEX : cpType = BT_CP_TYPE_EDGE;
+							cpType = cpType = BT_CP_TYPE_EDGE;
 
 							// If the edge angle is small set the normal to the face normal to improve gliding over a mostly
 							// flat surface. GJK seems to generally output slightly noisy normals.
@@ -259,77 +296,78 @@ partId, int triangleIndex)
 							{
 								pt.m_normalWorldOnB = worldNormal;
 							}
-
-							break;
 						}
 					}
 				}
-			}
-			
-			if (!pointOnEdge) // ...point is on triangle face
-			{ 
-				cpType = BT_CP_TYPE_FACE;
-				// Replace the normal by this more precise one
-				pt.m_normalWorldOnB = worldNormal;
-			}
 
-			if (cpType != BT_CP_TYPE_NONE)
+				break; // no need to process other edges if this already contains the point
+			}
+		}
+
+		if (pointOnFace)
+		{ 
+			cpType = BT_CP_TYPE_FACE;
+			// Replace the normal by this more precise one
+			pt.m_normalWorldOnB = worldNormal;
+		}
+
+		if (cpType != BT_CP_TYPE_NONE)
+		{
+			pt.m_cpType = cpType;
+
+			if (swapped) 
 			{
-				pt.m_cpType = cpType;
+				pt.m_localPointB -= localTranslation;
+			}
+			else 
+			{
+				pt.m_localPointA -= localTranslation;
+			}
 
-				if (swapped) {
-					pt.m_localPointB -= localTranslation;
-					
-				}
-				else {
-					pt.m_localPointA -= localTranslation;
-				}
+			pt.m_positionWorldOnA -= translation;
+			pt.m_positionWorldOnB -= translation;
 
-				pt.m_positionWorldOnB -= translation;
-				pt.m_positionWorldOnA -= translation;
+			int insertIndex = originalManifold->getCacheEntry(pt);
 
-				int insertIndex = originalManifold->getCacheEntry(pt);
+			if (insertIndex >= 0)
+			{
+				btManifoldPoint& ptCached = originalManifold->getContactPoint(insertIndex);
 				
-				if (insertIndex >= 0)
+				// If this point is on a face, always replace. If this point is on an edge, only replace
+				// the similar point if it is on an edge or vertex. If this point is on a vertex, only
+				// replace it if it is on vertex as well. This is key to fix problems like first adding
+				// a contact to an edge on one triangle and then replacing it by a contact on a vertex on
+				// another triangle which will cause the object to penetrate the edge while standing on the
+				// other triangle's vertex.
+				if (ptCached.m_cpType == BT_CP_TYPE_NONE || 
+					(cpType == BT_CP_TYPE_FACE) ||
+					(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_EDGE) ||
+					(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_VERTEX) ||
+					(cpType == BT_CP_TYPE_VERTEX && ptCached.m_cpType == BT_CP_TYPE_VERTEX)) 
 				{
-					btManifoldPoint& ptCached = originalManifold->getContactPoint(insertIndex);
-					
-					// If this point is on a face, always replace. If this point is on a edge, only replace
-					// the similar point if it is on an edge or vertex. If this point is on a vertex, only
-					// replace it if it is on vertex as well. This is key to fix problems like first adding
-					// a contact to an edge on one triangle and then replacing it by a contact on a vertex on
-					// another triangle which will cause the object to penetrate the edge while standing on the
-					// other triangle's vertex.
-					if (ptCached.m_cpType == BT_CP_TYPE_NONE || 
-					   (cpType == BT_CP_TYPE_FACE) ||
-					   (cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_EDGE) ||
-					   (cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_VERTEX) ||
-					   (cpType == BT_CP_TYPE_VERTEX && ptCached.m_cpType == BT_CP_TYPE_VERTEX)) 
-					{
-						originalManifold->replaceContactPoint(pt,insertIndex);
-					}
-				} else
-				{
-					originalManifold->addManifoldPoint(pt);
+					originalManifold->replaceContactPoint(pt,insertIndex);
 				}
+			} else
+			{
+				originalManifold->addManifoldPoint(pt);
 			}
 		}
-		
-		m_dispatcher->releaseManifold(tempManifold);
-
-		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
-		{
-			m_resultOut->setBody0Wrap(tmpWrap);
-			m_resultOut->setBody1Wrap(tmpConvexWrap);
-		} else
-		{
-			m_resultOut->setBody1Wrap(tmpWrap);
-			m_resultOut->setBody0Wrap(tmpConvexWrap);
-		}
-
-		colAlgo->~btCollisionAlgorithm();
-		ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
 	}
+	
+	m_dispatcher->releaseManifold(tempManifold);
+
+	if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
+	{
+		m_resultOut->setBody0Wrap(tmpWrap);
+		m_resultOut->setBody1Wrap(tmpConvexWrap);
+	} else
+	{
+		m_resultOut->setBody1Wrap(tmpWrap);
+		m_resultOut->setBody0Wrap(tmpConvexWrap);
+	}
+
+	colAlgo->~btCollisionAlgorithm();
+	ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
 
 }
 

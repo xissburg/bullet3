@@ -200,6 +200,7 @@ public:
 	btSingleConstraintRowSolver	getSSE4_1ConstraintRowSolverLowerLimit();
 	
 	btSolverConstraint& getSolverContactConstraintAtIndex(int i) { return m_tmpSolverContactConstraintPool[i]; }
+	btSolverBody& getSolverBodyAtIndex(int i) { return m_tmpSolverBodyPool[i]; }
 };
 
 

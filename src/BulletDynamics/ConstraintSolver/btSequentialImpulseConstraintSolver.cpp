@@ -1556,9 +1556,9 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 				}
 
 				if (useSplitSpinB) {
-					bodyBPtr->internalApplyImpulseWithSpinSplit(-solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),-solverConstraint.m_angularComponentB,-appliedImpulse);
+					bodyBPtr->internalApplyImpulseWithSpinSplit(solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),solverConstraint.m_angularComponentB,appliedImpulse);
 				} else {
-					bodyBPtr->internalApplyImpulse(-solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),-solverConstraint.m_angularComponentB,-appliedImpulse);
+					bodyBPtr->internalApplyImpulse(solverConstraint.m_contactNormal2*rbB.getInvMass()*rbB.getLinearFactor(),solverConstraint.m_angularComponentB,appliedImpulse);
 				}
 			} else
 			{
@@ -2047,6 +2047,8 @@ btScalar btSequentialImpulseConstraintSolver::solveGroupCacheFriendlyIterations(
 		for ( int iteration = 0 ; iteration< maxIterations ; iteration++)
 		//for ( int iteration = maxIterations-1  ; iteration >= 0;iteration--)
 		{
+			
+
 			m_leastSquaresResidual = solveSingleIteration(iteration, bodies ,numBodies,manifoldPtr, numManifolds,constraints,numConstraints,infoGlobal,debugDrawer);
 
 			if (m_leastSquaresResidual <= infoGlobal.m_leastSquaresResidualThreshold || (iteration>= (maxIterations-1)))

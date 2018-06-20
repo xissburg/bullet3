@@ -207,15 +207,16 @@ int btPersistentManifold::getCacheEntry(const btManifoldPoint& newPoint) const
 		btVector3 diffA =  mp.m_localPointA - newPoint.m_localPointA;
 		const btScalar distToManiPointA = diffA.dot(diffA);
         
-        btVector3 diffB =  mp.m_localPointB - newPoint.m_localPointB;
-        const btScalar distToManiPointB = diffB.dot(diffB);
-        
 		if (distToManiPointA < shortestDist)
 		{
 			shortestDist = distToManiPointA;
 			nearestPoint = i;
 		}
-        else if (distToManiPointB < shortestDist) 
+
+		btVector3 diffB =  mp.m_localPointB - newPoint.m_localPointB;
+        const btScalar distToManiPointB = diffB.dot(diffB);
+        
+		if (distToManiPointB < shortestDist) 
 		{
             shortestDist = distToManiPointB;
             nearestPoint = i;
