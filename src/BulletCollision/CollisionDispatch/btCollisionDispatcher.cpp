@@ -91,7 +91,7 @@ btPersistentManifold*	btCollisionDispatcher::getNewManifold(const btCollisionObj
 
 	btScalar contactProcessingThreshold = btMin(body0->getContactProcessingThreshold(),body1->getContactProcessingThreshold());
 	
-	btScalar contactCachingThreshold = btMax(body0->getCollisionShape()->getContactCachingThreshold(), body1->getCollisionShape()->getContactCachingThreshold());
+	btScalar contactCachingThreshold = btMin(body0->getCollisionShape()->getContactCachingThreshold(), body1->getCollisionShape()->getContactCachingThreshold());
 		
  	void* mem = m_persistentManifoldPoolAllocator->allocate( sizeof( btPersistentManifold ) );
     if (NULL == mem)
