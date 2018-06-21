@@ -92,13 +92,6 @@ partId, int triangleIndex)
         //just for debugging purposes
         //printf("triangle %d",m_triangleCount++);
 
-
-
-	btCollisionAlgorithmConstructionInfo ci;
-	ci.m_dispatcher1 = m_dispatcher;
-
-
-
 #if 0	
 	
 	///debug drawing of the overlapping triangles
@@ -117,7 +110,7 @@ partId, int triangleIndex)
 	{
 		return;
 	}
-	
+
 	btVector3 localTranslation = -triangle[0];
 	btVector3 translation = m_triBodyWrap->getWorldTransform().getBasis() * localTranslation;
 
@@ -134,6 +127,12 @@ partId, int triangleIndex)
 	t.setOrigin(t.getOrigin() + translation);
 	convexObj->setWorldTransform(t);
 
+	bool isTireFr = convexObj->getUserIndex() == 99135 && m_convexBodyWrap->m_index == 0;
+
+	if (isTireFr) {
+		//printf("@--- Triangle %d -------------\n", triangleIndex);
+	}
+
 	btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexWrapTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
 	
 	// Add points to a temporary manifold in the convex-triangle collision algorithm
@@ -144,7 +143,7 @@ partId, int triangleIndex)
 	m_resultOut->setPersistentManifold(tempManifold);
 	
 	btCollisionObjectWrapper triObWrap(m_triBodyWrap,&tm,m_triBodyWrap->getCollisionObject(),m_triBodyWrap->getWorldTransform(),partId,triangleIndex);//correct transform?
-	btCollisionAlgorithm* colAlgo = ci.m_dispatcher1->findAlgorithm(&convexBodyWrap, &triObWrap, tempManifold, 
+	btCollisionAlgorithm* colAlgo = m_dispatcher->findAlgorithm(&convexBodyWrap, &triObWrap, tempManifold, 
 									m_resultOut->m_closestPointDistanceThreshold > 0 ? BT_CLOSEST_POINT_ALGORITHMS : BT_CONTACT_POINT_ALGORITHMS);
 	
 	const btCollisionObjectWrapper* tmpWrap = 0;
@@ -205,8 +204,17 @@ partId, int triangleIndex)
 
 	const btScalar distToVertex = 0.01;
 
+	if (isTireFr) {
+		if (tempManifold->getNumContacts() == 0) {
+			//printf("No points.. o_o\n");
+		}
+		else if (tempManifold->getNumContacts() != 1) {
+			//printf("More than one point.. :O\n");
+		}
+	}
+
 	// tempManifold->getNumContacts() should be 1 since both objects are convex
-	for (int i = 0; i < tempManifold->getNumContacts(); ++i) 
+	for (int i = 0; i < tempManifold->getNumContacts(); ++i)
 	{
 		bool pointOnFace = true;
 		btContactPointType cpType = BT_CP_TYPE_NONE;
@@ -227,36 +235,45 @@ partId, int triangleIndex)
 			p -= t * edge;
 			btScalar distance = btSqrt(p.dot(p));
 
-			btVector3 edgeNormal = edge.cross(localNormal);
-			edgeNormal = triBasis * edgeNormal;
-			
-			// Check if the point on the triangle is near the edge and also if it is not immediately inside
-			// the triangle, i.e., the contactNormal has to be pointing outside the plane with normal edge X normal.
-			// Tolerances might require tunning.
-			if (distance < 0.001 + m_collisionMarginTriangle && contactNormal.dot(edgeNormal) > -SIMD_EPSILON) {
-				pointOnFace = false;
+			// Check if the point on the triangle is near the edge 
+			if (distance < m_collisionMarginTriangle) {
 				btScalar edgeAngle = edgeAngles[j];
+						
+				if (isTireFr) {
+					//printf("Point on Edge %d with angle %f and current angle %f?\n", j, edgeAngle/SIMD_PI*180, a/SIMD_PI*180);
+				}
 
 				if (edgeAngle == SIMD_2_PI) // edge has no adjacent face
-				{ 
-					if (p.length2() < distToVertex*distToVertex || (pA - e1).length2() < distToVertex*distToVertex) 
+				{
+					pointOnFace = false;
+
+					if ((pA - e0).length2() < distToVertex*distToVertex || (pA - e1).length2() < distToVertex*distToVertex) 
 					{
 						cpType = BT_CP_TYPE_VERTEX;
+
+						if (isTireFr) {
+							//printf("Result: Point on vertex with no adjacent face\n");
+						}
 					}
 					else 
 					{
 						cpType = BT_CP_TYPE_EDGE;
+
+						if (isTireFr) {
+							//printf("Result: Point on edge with no adjacent face\n");
+						}
 					}
 				}
-				else if (edgeAngle <= 0) // ignore concave edges
+				else if (edgeAngle <= 0) // convex edge
 				{ 
+					pointOnFace = false;
 					bool pointOnVertex0 = (pA - e0).length2() < distToVertex*distToVertex;
 					bool pointOnVertex1 = (pA - e1).length2() < distToVertex*distToVertex;
 
 					if (pointOnVertex0 || pointOnVertex1) 
 					{
-						// This point must be within the limits of the voronoi region of both edges which share vertex e0						
-						// project contact normal onto plane orthogonal to edge
+						// This point must be within the limits of the voronoi region of both edges which share a vertex						
+						// Project contact normal onto plane orthogonal to edge
 						btVector3 e0n = triBasis * edge.normalized();
 						btVector3 n0 = contactNormal - e0n * contactNormal.dot(e0n);
 						btScalar c0 = n0.dot(worldNormal);
@@ -276,6 +293,13 @@ partId, int triangleIndex)
 						if (a0 < -edgeAngle + 0.0174 && a1 < -edgeAngle1 + 0.0174)
 						{
 							cpType = BT_CP_TYPE_VERTEX;
+
+							if (isTireFr) {
+								//printf("Result: Point on Vertex %d\n", pointOnVertex0 ? 0 : 1);
+							}
+						}
+						else if (isTireFr) {
+							//printf("Result: Point is on vertex but normal is out of its Voronoi region\n");
 						}
 					}
 					else 
@@ -283,12 +307,16 @@ partId, int triangleIndex)
 						btScalar c = contactNormal.dot(worldNormal);
 						// TODO: store the sine of the angle instead in the triangle info map or smth and get rid of this btAcos
 						btScalar a = btAcos(c);
-						
+
 						// Add it if it's in the edge's voronoi region. Tolerance might require tunning. Small values 
 						// seem to deteriorate contact persistence.
-						if (a < -edgeAngle + 0.08) 
+						if (a < -edgeAngle + 0.0174) 
 						{
-							cpType = cpType = BT_CP_TYPE_EDGE;
+							if (isTireFr) {
+								//printf("Result: Point lies on edge\n");
+							}
+
+							cpType = BT_CP_TYPE_EDGE;
 
 							// If the edge angle is small set the normal to the face normal to improve gliding over a mostly
 							// flat surface. GJK seems to generally output slightly noisy normals.
@@ -297,6 +325,16 @@ partId, int triangleIndex)
 								pt.m_normalWorldOnB = worldNormal;
 							}
 						}
+						else if (isTireFr) {
+							//printf("Result: Point is on edge but normal is out of its Voronoi region\n");
+						}
+					}
+				}
+				else { // concave edge
+					pointOnFace = contactNormal.dot(worldNormal) > 0.9998;
+
+					if (isTireFr) {
+						//printf("Result: Point is on concave edge\n");
 					}
 				}
 
@@ -309,6 +347,10 @@ partId, int triangleIndex)
 			cpType = BT_CP_TYPE_FACE;
 			// Replace the normal by this more precise one
 			pt.m_normalWorldOnB = worldNormal;
+
+			if (isTireFr) {
+				//printf("Result: Point on Face | margin %f\n", m_collisionMarginTriangle);
+			}
 		}
 
 		if (cpType != BT_CP_TYPE_NONE)
@@ -318,8 +360,7 @@ partId, int triangleIndex)
 			if (swapped) 
 			{
 				pt.m_localPointB -= localTranslation;
-			}
-			else 
+			} else 
 			{
 				pt.m_localPointA -= localTranslation;
 			}
@@ -352,6 +393,9 @@ partId, int triangleIndex)
 				originalManifold->addManifoldPoint(pt);
 			}
 		}
+		else if (isTireFr) {
+			//printf("No points added (!!!)\n");
+		}
 	}
 	
 	m_dispatcher->releaseManifold(tempManifold);
@@ -367,7 +411,7 @@ partId, int triangleIndex)
 	}
 
 	colAlgo->~btCollisionAlgorithm();
-	ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
+	m_dispatcher->freeCollisionAlgorithm(colAlgo);
 
 }
 
@@ -483,6 +527,11 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 			if (convexBodyWrap->getCollisionShape()->isConvex())
 			{
 				btScalar collisionMarginTriangle = concaveShape->getMargin();
+
+				bool isTireFR = convexBodyWrap->getCollisionObject()->getUserIndex() == 99135 && convexBodyWrap->m_index == 0;
+				if (isTireFR) {
+					//printf("=====================================================\n");
+				}
 				
 				// Use a clean manifold to insert the current contact points
 				btPersistentManifold* originalManifold = m_btConvexTriangleCallback.m_manifoldPtr;
@@ -506,9 +555,21 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 					if (insertIndex >= 0)
 					{
 						originalManifold->replaceContactPoint(pt,insertIndex);
+						if (isTireFR) {
+						//printf("*** Replaced ");
+						}
 					} else
 					{
 						originalManifold->addManifoldPoint(pt);
+						if (isTireFR) {
+						//printf("*** Added ");
+						}
+					}
+
+					if (isTireFR) {
+					//printf("Point %d ************\n", i);
+					//printf("m_localPointA %f %f %f\n", pt.m_localPointA.x(), pt.m_localPointA.y(), pt.m_localPointA.z());
+					//printf("m_localPointB %f %f %f\n", pt.m_localPointB.x(), pt.m_localPointB.y(), pt.m_localPointB.z());
 					}
 				}
 
