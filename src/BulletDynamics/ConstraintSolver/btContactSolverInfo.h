@@ -56,6 +56,7 @@ struct btContactSolverInfoData
 	btScalar	m_splitImpulseTurnErp;
 	btScalar	m_linearSlop;
 	btScalar	m_warmstartingFactor;
+	btScalar	m_warmstartingFactorNonContact;
 
 	int			m_solverMode;
 	int	m_restingContactRestitutionThreshold;
@@ -92,6 +93,7 @@ struct btContactSolverInfo : public btContactSolverInfoData
 		m_splitImpulseTurnErp = 0.1f;
 		m_linearSlop = btScalar(0.0);
 		m_warmstartingFactor=btScalar(0.85);
+		m_warmstartingFactorNonContact=btScalar(0.5);
 		//m_solverMode =  SOLVER_USE_WARMSTARTING |  SOLVER_SIMD | SOLVER_DISABLE_VELOCITY_DEPENDENT_FRICTION_DIRECTION|SOLVER_USE_2_FRICTION_DIRECTIONS|SOLVER_ENABLE_FRICTION_DIRECTION_CACHING;// | SOLVER_RANDMIZE_ORDER;
 		m_solverMode = SOLVER_USE_WARMSTARTING | SOLVER_SIMD;// | SOLVER_RANDMIZE_ORDER;
 		m_restingContactRestitutionThreshold = 2;//unused as of 2.81

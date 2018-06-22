@@ -1545,7 +1545,7 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 			
 			if (infoGlobal.m_solverMode & SOLVER_USE_WARMSTARTING)
 			{
-				btScalar appliedImpulse = constraint->internalGetAppliedImpulse(j) * infoGlobal.m_warmstartingFactor;
+				btScalar appliedImpulse = constraint->internalGetAppliedImpulse(j) * infoGlobal.m_warmstartingFactorNonContact;
 				solverConstraint.m_appliedImpulse = appliedImpulse;
 
 				// Apply impulse spliting between non-spin and spin impulses
