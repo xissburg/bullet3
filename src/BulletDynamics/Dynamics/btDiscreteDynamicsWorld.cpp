@@ -476,6 +476,29 @@ int	btDiscreteDynamicsWorld::stepSimulation( btScalar timeStep,int maxSubSteps, 
 	return numSimulationSubSteps;
 }
 
+void btDiscreteDynamicsWorld::stepSimulationFixedTimesteps(btScalar fixedTimeStep, unsigned int numFixedTimesteps)
+{
+	startProfiling(fixedTimeStep*numFixedTimesteps);
+
+	m_fixedTimeStep = fixedTimeStep;
+
+	saveKinematicState(fixedTimeStep*numFixedTimesteps);
+
+	applyGravity();
+
+	for (int i=0;i<numFixedTimesteps;i++)
+	{
+		internalSingleStepSimulation(fixedTimeStep);
+		synchronizeMotionStates();
+	}
+
+	clearForces();
+
+#ifndef BT_NO_PROFILE
+	CProfileManager::Increment_Frame_Counter();
+#endif //BT_NO_PROFILE
+}
+
 void	btDiscreteDynamicsWorld::internalSingleStepSimulation(btScalar timeStep)
 {
 
@@ -719,16 +742,15 @@ void	btDiscreteDynamicsWorld::solveConstraints(btContactSolverInfo& solverInfo)
 {
 	BT_PROFILE("solveConstraints");
 
-	m_sortedConstraints.resize( m_constraints.size());
+	m_sortedConstraints.clear();
 	int i;
 	for (i=0;i<getNumConstraints();i++)
 	{
-		m_sortedConstraints[i] = m_constraints[i];
+		if (m_constraints[i]->isEnabled()) 
+		{
+			m_sortedConstraints.push_back(m_constraints[i]);
+		}
 	}
-
-//	btAssert(0);
-
-
 
 	m_sortedConstraints.quickSort(btSortConstraintOnIslandPredicate());
 

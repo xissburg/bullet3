@@ -111,6 +111,7 @@ public:
 	///if maxSubSteps > 0, it will interpolate motion between fixedTimeStep's
 	virtual int	stepSimulation( btScalar timeStep,int maxSubSteps=1, btScalar fixedTimeStep=btScalar(1.)/btScalar(60.));
 
+	void stepSimulationFixedTimesteps(btScalar fixedTimeStep, unsigned int numFixedTimesteps);
 
 	virtual void	synchronizeMotionStates();
 
@@ -234,6 +235,7 @@ public:
 	{
 		return m_latencyMotionStateInterpolation;
 	}
+	
 };
 
 #endif //BT_DISCRETE_DYNAMICS_WORLD_H
