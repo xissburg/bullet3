@@ -80,8 +80,8 @@ static btSimdScalar gResolveSingleConstraintRowGeneric_scalar_reference(btSolver
 static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_scalar_reference(btSolverBody& body1, btSolverBody& body2, const btSolverConstraint& c)
 {
 	btScalar deltaImpulse = c.m_rhs - btScalar(c.m_appliedImpulse)*c.m_cfm;
-	bool useSplitSpin1 = body1.m_useSplitSpin && c.m_useSplitSpinBodyA;
-	bool useSplitSpin2 = body2.m_useSplitSpin && c.m_useSplitSpinBodyB;
+	bool useSplitSpin1 = body1.m_useSplitSpin && (c.m_flags & BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A);
+	bool useSplitSpin2 = body2.m_useSplitSpin && (c.m_flags & BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B);
 	btVector3 deltaAngularVelocity1 = useSplitSpin1 ? body1.internalGetDeltaAngularVelocityWithSpin() : body1.internalGetDeltaAngularVelocity();
 	btVector3 deltaAngularVelocity2 = useSplitSpin2 ? body2.internalGetDeltaAngularVelocityWithSpin() : body2.internalGetDeltaAngularVelocity();
 	const btScalar deltaVel1Dotn = c.m_contactNormal1.dot(body1.internalGetDeltaLinearVelocity()) + c.m_relpos1CrossNormal.dot(deltaAngularVelocity1);
@@ -624,8 +624,7 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraint(btSolverConstr
 	solverConstraint.m_appliedImpulse = 0.f;
 	solverConstraint.m_appliedPushImpulse = 0.f;
 	
-	solverConstraint.m_useSplitSpinBodyA = true;
-	solverConstraint.m_useSplitSpinBodyB = true;
+	solverConstraint.m_flags = BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A | BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B;
 
 	if (body0)
 	{
@@ -759,8 +758,7 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraint(	btSo
 	solverConstraint.m_appliedImpulse = 0.f;
 	solverConstraint.m_appliedPushImpulse = 0.f;
 	
-	solverConstraint.m_useSplitSpinBodyA = true;
-	solverConstraint.m_useSplitSpinBodyB = true;
+	solverConstraint.m_flags = BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A | BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B;
 	
 	{
 		btVector3 ftorqueAxis1 = -normalAxis1;
@@ -1459,6 +1457,7 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 	info2.m_upperLimit = &currentConstraintRow->m_upperLimit;
 	info2.m_numIterations = infoGlobal.m_numIterations;
 	info2.m_index = &currentConstraintRow->m_frictionIndex;
+	info2.m_flags = &currentConstraintRow->m_flags;
 	constraint->getInfo2(&info2);
 
 	///finalize the constraint setup
@@ -1477,8 +1476,6 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 		}
 
 		solverConstraint.m_originalContactPoint = constraint;
-		solverConstraint.m_useSplitSpinBodyA = constraint->useSplitSpinBodyA();
-		solverConstraint.m_useSplitSpinBodyB = constraint->useSplitSpinBodyB();
 		
 		{
 			const btVector3& ftorqueAxis1 = solverConstraint.m_relpos1CrossNormal;
@@ -1514,8 +1511,8 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 			btVector3 externalTorqueImpulseB = bodyBPtr->m_originalBody ?bodyBPtr->m_externalTorqueImpulse : btVector3(0,0,0);
 
 			btVector3 angularVelocityA, angularVelocityB;
-			bool useSplitSpinA = solverConstraint.m_useSplitSpinBodyA && bodyAPtr->m_useSplitSpin;
-			bool useSplitSpinB = solverConstraint.m_useSplitSpinBodyB && bodyBPtr->m_useSplitSpin;
+			bool useSplitSpinA = (solverConstraint.m_flags & BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A) && bodyAPtr->m_useSplitSpin;
+			bool useSplitSpinB = (solverConstraint.m_flags & BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B) && bodyBPtr->m_useSplitSpin;
 
 			if (useSplitSpinA) {
 				angularVelocityA = rbA.getAngularVelocityWithSpin()+externalTorqueImpulseA;
@@ -1866,7 +1863,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 				gPrepareSolverConstraint(constraint, bodyA, bodyB);
 			}
 
-			if (constraint.m_useSplitSpinBodyA || constraint.m_useSplitSpinBodyB) {
+			if (constraint.m_flags & (BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A | BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B)) {
 				residual = resolveSingleConstraintRowGenericSplitSpin(bodyA,bodyB,constraint);
 			}
 			else {

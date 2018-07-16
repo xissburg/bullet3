@@ -32,9 +32,7 @@ m_overrideNumSolverIterations(-1),
 m_rbA(rbA),
 m_rbB(getFixedBody()),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
-m_jointFeedback(0),
-m_useSplitSpinBodyA(false),
-m_useSplitSpinBodyB(false)
+m_jointFeedback(0)
 {
 }
 
@@ -50,9 +48,7 @@ m_overrideNumSolverIterations(-1),
 m_rbA(rbA),
 m_rbB(rbB),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
-m_jointFeedback(0),
-m_useSplitSpinBodyA(false),
-m_useSplitSpinBodyB(false)
+m_jointFeedback(0)
 {
 }
 
