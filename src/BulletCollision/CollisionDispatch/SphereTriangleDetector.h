@@ -23,7 +23,7 @@ subject to the following restrictions:
 class btSphereShape;
 class btTriangleShape;
 
-
+btScalar SegmentSqrDistance(const btVector3& from, const btVector3& to,const btVector3 &p, btVector3 &nearest);
 
 /// sphere-triangle to match the btDiscreteCollisionDetectorInterface
 struct SphereTriangleDetector : public btDiscreteCollisionDetectorInterface
