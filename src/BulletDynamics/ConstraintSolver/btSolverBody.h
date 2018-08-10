@@ -92,11 +92,18 @@ operator*(const btSimdScalar& v1, const btSimdScalar& v2)
 	return btSimdScalar(_mm_mul_ps(v1.get128(),v2.get128()));
 }
 
-///@brief Return the elementwise product of two btSimdScalar
+///@brief Return the elementwise sum of two btSimdScalar
 SIMD_FORCE_INLINE btSimdScalar
 operator+(const btSimdScalar& v1, const btSimdScalar& v2)
 {
 	return btSimdScalar(_mm_add_ps(v1.get128(),v2.get128()));
+}
+
+SIMD_FORCE_INLINE btSimdScalar
+operator+=(btSimdScalar& v1, const btSimdScalar& v2)
+{
+	v1.m_vec128 = _mm_add_ps(v1.get128(),v2.get128());
+	return v1;
 }
 
 
@@ -111,7 +118,6 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btTransform		m_worldTransform;
 	btVector3		m_deltaLinearVelocity;
 	btVector3		m_deltaAngularVelocity;
-	btScalar		m_deltaSpin;
 	btVector3		m_angularFactor;
 	btVector3		m_linearFactor;
 	btVector3		m_invMass;
@@ -119,10 +125,17 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverBody
 	btVector3		m_turnVelocity;
 	btVector3		m_linearVelocity;
 	btVector3		m_angularVelocity;
-	btScalar		m_spin;
 	btVector3		m_externalForceImpulse;
 	btVector3		m_externalTorqueImpulse;
 	bool 			m_useSplitSpin;
+
+#ifdef USE_SIMD
+	btSimdScalar	m_deltaSpin;
+	btSimdScalar	m_spin;
+#else
+	btScalar		m_deltaSpin;
+	btScalar		m_spin;
+#endif
 
 	btRigidBody*	m_originalBody;
 	void	setWorldTransform(const btTransform& worldTransform)

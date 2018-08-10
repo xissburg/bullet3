@@ -235,6 +235,11 @@ public:
 	{
 		return m_latencyMotionStateInterpolation;
 	}
+
+	btScalar getLocalTime()
+	{
+		return m_localTime;
+	}
 	
 };
 

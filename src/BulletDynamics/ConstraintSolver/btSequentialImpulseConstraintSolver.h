@@ -119,8 +119,8 @@ protected:
 	void	initSolverBody(btSolverBody* solverBody, btCollisionObject* collisionObject, btScalar timeStep);
 
 	btSimdScalar	resolveSingleConstraintRowGeneric(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
-	btSimdScalar	resolveSingleConstraintRowGenericSplitSpin(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowGenericSIMD(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
+	btSimdScalar	resolveSingleConstraintRowGenericSplitSpin(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowLowerLimit(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowLowerLimitSIMD(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSplitPenetrationImpulse(btSolverBody& bodyA,btSolverBody& bodyB, const btSolverConstraint& contactConstraint)
