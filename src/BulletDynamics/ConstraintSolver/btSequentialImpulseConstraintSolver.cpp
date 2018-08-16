@@ -1477,25 +1477,6 @@ void btSequentialImpulseConstraintSolver::convertJoint(btSolverConstraint* curre
 		currentConstraintRow[j].m_overrideNumSolverIterations = overrideNumSolverIterations;
 	}
 
-    // these vectors are already cleared in initSolverBody, no need to redundantly clear again
-    btAssert(bodyAPtr->getDeltaLinearVelocity().isZero());
-    btAssert(bodyAPtr->getDeltaAngularVelocity().isZero());
-    btAssert(bodyAPtr->getPushVelocity().isZero());
-    btAssert(bodyAPtr->getTurnVelocity().isZero());
-    btAssert(bodyBPtr->getDeltaLinearVelocity().isZero());
-    btAssert(bodyBPtr->getDeltaAngularVelocity().isZero());
-    btAssert(bodyBPtr->getPushVelocity().isZero());
-    btAssert(bodyBPtr->getTurnVelocity().isZero());
-	//bodyAPtr->internalGetDeltaLinearVelocity().setValue(0.f,0.f,0.f);
-	//bodyAPtr->internalGetDeltaAngularVelocity().setValue(0.f,0.f,0.f);
-	//bodyAPtr->internalGetPushVelocity().setValue(0.f,0.f,0.f);
-	//bodyAPtr->internalGetTurnVelocity().setValue(0.f,0.f,0.f);
-	//bodyBPtr->internalGetDeltaLinearVelocity().setValue(0.f,0.f,0.f);
-	//bodyBPtr->internalGetDeltaAngularVelocity().setValue(0.f,0.f,0.f);
-	//bodyBPtr->internalGetPushVelocity().setValue(0.f,0.f,0.f);
-	//bodyBPtr->internalGetTurnVelocity().setValue(0.f,0.f,0.f);
-
-
 	btTypedConstraint::btConstraintInfo2 info2;
 	info2.fps = 1.f/infoGlobal.m_timeStep;
 	info2.erp = infoGlobal.m_erp;
