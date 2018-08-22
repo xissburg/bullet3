@@ -77,7 +77,7 @@ class btSortConstraintOnIslandPredicate
 			int rIslandId0,lIslandId0;
 			rIslandId0 = btGetConstraintIslandId(rhs);
 			lIslandId0 = btGetConstraintIslandId(lhs);
-			return lIslandId0 < rIslandId0;
+			return lIslandId0 < rIslandId0 || (lIslandId0 == rIslandId0 && lhs->getSortIndex() < rhs->getSortIndex());
 		}
 };
 
@@ -211,7 +211,8 @@ m_fixedTimeStep(0),
 m_synchronizeAllMotionStates(false),
 m_applySpeculativeContactRestitution(false),
 m_profileTimings(0),
-m_latencyMotionStateInterpolation(true)
+m_latencyMotionStateInterpolation(true),
+m_constraintSortIndex(0)
 
 {
 	if (!m_constraintSolver)
@@ -685,6 +686,7 @@ void	btDiscreteDynamicsWorld::updateActivationState(btScalar timeStep)
 
 void	btDiscreteDynamicsWorld::addConstraint(btTypedConstraint* constraint,bool disableCollisionsBetweenLinkedBodies)
 {
+	constraint->setSortIndex(m_constraintSortIndex++);
 	m_constraints.push_back(constraint);
     //Make sure the two bodies of a type constraint are different (possibly add this to the btTypedConstraint constructor?)
 	// Allow constraints between same bodies. Useful when constraining an object's spin to its angular velocity.

@@ -90,6 +90,7 @@ ATTRIBUTE_ALIGNED16(class) btTypedConstraint : public btTypedObject
 	bool		m_isEnabled;
 	bool		m_needsFeedback;
 	int			m_overrideNumSolverIterations;
+	int			m_sortIndex; // used to keep the relative order of constraints when sorting them in btDiscreteDynamicsWorld
 
 	btTypedConstraint&	operator=(btTypedConstraint&	other)
 	{
@@ -331,6 +332,16 @@ public:
 	btScalar getDbgDrawSize()
 	{
 		return m_dbgDrawSize;
+	}
+
+	void setSortIndex(int i)
+	{
+		m_sortIndex = i;
+	}
+
+	int getSortIndex() const
+	{
+		return m_sortIndex;
 	}
 
 	///override the default global value of a parameter (such as ERP or CFM), optionally provide the axis (0..5).

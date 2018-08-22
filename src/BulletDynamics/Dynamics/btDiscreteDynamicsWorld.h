@@ -71,6 +71,10 @@ protected:
 	btAlignedObjectArray<btPersistentManifold*>	m_predictiveManifolds;
     btSpinMutex m_predictiveManifoldsMutex;  // used to synchronize threads creating predictive contacts
 
+	// Incremented everytime a new constraint is added and used to keep the quickSort stable on m_sortedConstraints
+	// to guarantee the relative order of constraints will be maintained which is important for determinism.
+	int m_constraintSortIndex;
+
 	virtual void	predictUnconstraintMotion(btScalar timeStep);
 	
     void integrateTransformsInternal( btRigidBody** bodies, int numBodies, btScalar timeStep );  // can be called in parallel
