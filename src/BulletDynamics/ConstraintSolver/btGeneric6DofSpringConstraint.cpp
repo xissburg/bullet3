@@ -118,7 +118,7 @@ void btGeneric6DofSpringConstraint::internalUpdateSprings(btConstraintInfo2* inf
 {
 	// it is assumed that calculateTransforms() have been called before this call
 	int i;
-	//btVector3 relVel = m_rbB.getLinearVelocity() - m_rbA.getLinearVelocity();
+	//btVector3 relVel = m_rbB->getLinearVelocity() - m_rbA->getLinearVelocity();
 	for(i = 0; i < 3; i++)
 	{
 		if(m_springEnabled[i])
@@ -175,8 +175,8 @@ void btGeneric6DofSpringConstraint::setAxis(const btVector3& axis1,const btVecto
                                 xAxis[2], yAxis[2], zAxis[2]);
 
 	// now get constraint frame in local coordinate systems
-	m_frameInA = m_rbA.getCenterOfMassTransform().inverse() * frameInW;
-	m_frameInB = m_rbB.getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInA = m_rbA->getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInB = m_rbB->getCenterOfMassTransform().inverse() * frameInW;
 
   calculateTransforms();
 }

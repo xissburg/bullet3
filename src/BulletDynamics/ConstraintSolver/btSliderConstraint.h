@@ -181,8 +181,6 @@ public:
 
 
 	// access
-    const btRigidBody& getRigidBodyA() const { return m_rbA; }
-    const btRigidBody& getRigidBodyB() const { return m_rbB; }
     const btTransform & getCalculatedTransformA() const { return m_calculatedTransformA; }
     const btTransform & getCalculatedTransformB() const { return m_calculatedTransformB; }
     const btTransform & getFrameOffsetA() const { return m_frameInA; }
@@ -272,7 +270,7 @@ public:
 	{ 
 		m_frameInA=frameA; 
 		m_frameInB=frameB;
-		calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+		calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 		buildJacobian();
 	} 
 

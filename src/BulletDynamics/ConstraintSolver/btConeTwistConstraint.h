@@ -157,15 +157,6 @@ public:
 	void	updateRHS(btScalar	timeStep);
 
 
-	const btRigidBody& getRigidBodyA() const
-	{
-		return m_rbA;
-	}
-	const btRigidBody& getRigidBodyB() const
-	{
-		return m_rbB;
-	}
-
 	void	setAngularOnly(bool angularOnly)
 	{
 		m_angularOnly = angularOnly;

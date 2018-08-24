@@ -78,8 +78,8 @@ void btUniversalConstraint::setAxis(const btVector3& axis1,const btVector3& axis
 	frameInW.setOrigin(m_anchor);
 
 	// now get constraint frame in local coordinate systems
-	m_frameInA = m_rbA.getCenterOfMassTransform().inverse() * frameInW;
-	m_frameInB = m_rbB.getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInA = m_rbA->getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInB = m_rbB->getCenterOfMassTransform().inverse() * frameInW;
 
   calculateTransforms();
 }

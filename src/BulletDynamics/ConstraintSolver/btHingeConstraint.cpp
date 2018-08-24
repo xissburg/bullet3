@@ -197,7 +197,7 @@ m_stopERP(0)
 {
 	///not providing rigidbody B means implicitly using worldspace for body B
 
-	m_rbBFrame.getOrigin() = m_rbA.getCenterOfMassTransform()(m_rbAFrame.getOrigin());
+	m_rbBFrame.getOrigin() = m_rbA->getCenterOfMassTransform()(m_rbAFrame.getOrigin());
 #ifndef	_BT_USE_CENTER_LIMIT_
 	//start with free
 	m_lowerLimit = btScalar(1.0f);
@@ -221,8 +221,8 @@ void	btHingeConstraint::buildJacobian()
 
 		if (!m_angularOnly)
 		{
-			btVector3 pivotAInW = m_rbA.getCenterOfMassTransform()*m_rbAFrame.getOrigin();
-			btVector3 pivotBInW = m_rbB.getCenterOfMassTransform()*m_rbBFrame.getOrigin();
+			btVector3 pivotAInW = m_rbA->getCenterOfMassTransform()*m_rbAFrame.getOrigin();
+			btVector3 pivotBInW = m_rbB->getCenterOfMassTransform()*m_rbBFrame.getOrigin();
 			btVector3 relPos = pivotBInW - pivotAInW;
 
 			btVector3 normal[3];
@@ -240,15 +240,15 @@ void	btHingeConstraint::buildJacobian()
 			for (int i=0;i<3;i++)
 			{
 				new (&m_jac[i]) btJacobianEntry(
-				m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-				m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-				pivotAInW - m_rbA.getCenterOfMassPosition(),
-				pivotBInW - m_rbB.getCenterOfMassPosition(),
+				m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+				m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+				pivotAInW - m_rbA->getCenterOfMassPosition(),
+				pivotBInW - m_rbB->getCenterOfMassPosition(),
 				normal[i],
-				m_rbA.getInvInertiaDiagLocal(),
-				m_rbA.getInvMass(),
-				m_rbB.getInvInertiaDiagLocal(),
-				m_rbB.getInvMass());
+				m_rbA->getInvInertiaDiagLocal(),
+				m_rbA->getInvMass(),
+				m_rbB->getInvInertiaDiagLocal(),
+				m_rbB->getInvMass());
 			}
 		}
 
@@ -266,28 +266,28 @@ void	btHingeConstraint::buildJacobian()
 		btVector3 hingeAxisWorld = getRigidBodyA().getCenterOfMassTransform().getBasis() * m_rbAFrame.getBasis().getColumn(2);
 			
 		new (&m_jacAng[0])	btJacobianEntry(jointAxis0,
-			m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbA.getInvInertiaDiagLocal(),
-			m_rbB.getInvInertiaDiagLocal());
+			m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbA->getInvInertiaDiagLocal(),
+			m_rbB->getInvInertiaDiagLocal());
 
 		new (&m_jacAng[1])	btJacobianEntry(jointAxis1,
-			m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbA.getInvInertiaDiagLocal(),
-			m_rbB.getInvInertiaDiagLocal());
+			m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbA->getInvInertiaDiagLocal(),
+			m_rbB->getInvInertiaDiagLocal());
 
 		new (&m_jacAng[2])	btJacobianEntry(hingeAxisWorld,
-			m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbA.getInvInertiaDiagLocal(),
-			m_rbB.getInvInertiaDiagLocal());
+			m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbA->getInvInertiaDiagLocal(),
+			m_rbB->getInvInertiaDiagLocal());
 
 			// clear accumulator
 			m_accLimitImpulse = btScalar(0.);
 
 			// test angular limit
-			testLimit(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+			testLimit(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 
 		//Compute K = J*W*J' for hinge axis
 		btVector3 axisA =  getRigidBodyA().getCenterOfMassTransform().getBasis() *  m_rbAFrame.getBasis().getColumn(2);
@@ -366,7 +366,7 @@ void btHingeConstraint::getInfo1(btConstraintInfo1* info)
 		info->nub = 1; 
 		//always add the row, to avoid computation (data is not available yet)
 		//prepare constraint
-		testLimit(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+		testLimit(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 		if(getSolveLimit() || getEnableAngularMotor())
 		{
 			info->m_numConstraintRows++; // limit 3rd anguar as well
@@ -395,11 +395,11 @@ void btHingeConstraint::getInfo2 (btConstraintInfo2* info)
 {
 	if(m_useOffsetForConstraintFrame)
 	{
-		getInfo2InternalUsingFrameOffset(info, m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform(),m_rbA.getAngularVelocity(),m_rbB.getAngularVelocity());
+		getInfo2InternalUsingFrameOffset(info, m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform(),m_rbA->getAngularVelocity(),m_rbB->getAngularVelocity());
 	}
 	else
 	{
-		getInfo2Internal(info, m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform(),m_rbA.getAngularVelocity(),m_rbB.getAngularVelocity());
+		getInfo2Internal(info, m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform(),m_rbA->getAngularVelocity(),m_rbB->getAngularVelocity());
 	}
 }
 
@@ -676,7 +676,7 @@ void	btHingeConstraint::updateRHS(btScalar	timeStep)
 
 btScalar btHingeConstraint::getHingeAngle()
 {
-	return getHingeAngle(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	return getHingeAngle(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 }
 
 btScalar btHingeConstraint::getHingeAngle(const btTransform& transA,const btTransform& transB)
@@ -763,7 +763,7 @@ void btHingeConstraint::setMotorTarget(btScalar targetAngle, btScalar dt)
 	}
 #endif
 	// compute angular velocity
-	btScalar curAngle  = getHingeAngle(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	btScalar curAngle  = getHingeAngle(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 	btScalar dAngle = targetAngle - curAngle;
 	m_motorTargetVelocity = dAngle / dt;
 }

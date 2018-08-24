@@ -73,7 +73,7 @@ void btSliderConstraint::initParams()
 
 	m_useOffsetForConstraintFrame = USE_OFFSET_FOR_CONSTANT_FRAME;
 
-	calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 }
 
 
@@ -100,7 +100,7 @@ btSliderConstraint::btSliderConstraint(btRigidBody& rbB, const btTransform& fram
 {
 	///not providing rigidbody A means implicitly using worldspace for body A
 	m_frameInA = rbB.getCenterOfMassTransform() * m_frameInB;
-//	m_frameInA.getOrigin() = m_rbA.getCenterOfMassTransform()(m_frameInA.getOrigin());
+//	m_frameInA.getOrigin() = m_rbA->getCenterOfMassTransform()(m_frameInA.getOrigin());
 
 	initParams();
 }
@@ -122,7 +122,7 @@ void btSliderConstraint::getInfo1(btConstraintInfo1* info)
 		info->m_numConstraintRows = 4; // Fixed 2 linear + 2 angular
 		info->nub = 2; 
 		//prepare constraint
-		calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+		calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 		testAngLimits();
 		testLinLimits();
 		if(getSolveLinLimit() || getPoweredLinMotor())
@@ -147,7 +147,7 @@ void btSliderConstraint::getInfo1NonVirtual(btConstraintInfo1* info)
 
 void btSliderConstraint::getInfo2(btConstraintInfo2* info)
 {
-	getInfo2NonVirtual(info,m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform(), m_rbA.getLinearVelocity(),m_rbB.getLinearVelocity(), m_rbA.getInvMass(),m_rbB.getInvMass());
+	getInfo2NonVirtual(info,m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform(), m_rbA->getLinearVelocity(),m_rbB->getLinearVelocity(), m_rbA->getInvMass(),m_rbB->getInvMass());
 }
 
 
@@ -251,7 +251,7 @@ btVector3 btSliderConstraint::getAncorInA(void)
 {
 	btVector3 ancorInA;
 	ancorInA = m_realPivotAInW + (m_lowerLinLimit + m_upperLinLimit) * btScalar(0.5) * m_sliderAxis;
-	ancorInA = m_rbA.getCenterOfMassTransform().inverse() * ancorInA;
+	ancorInA = m_rbA->getCenterOfMassTransform().inverse() * ancorInA;
 	return ancorInA;
 }
 
@@ -663,8 +663,8 @@ void btSliderConstraint::getInfo2NonVirtual(btConstraintInfo2* info, const btTra
 			btScalar bounce = btFabs(btScalar(1.0) - getDampingLimAng());
 			if(bounce > btScalar(0.0))
 			{
-				btScalar vel = m_rbA.getAngularVelocity().dot(ax1);
-				vel -= m_rbB.getAngularVelocity().dot(ax1);
+				btScalar vel = m_rbA->getAngularVelocity().dot(ax1);
+				vel -= m_rbB->getAngularVelocity().dot(ax1);
 				// only apply bounce if the velocity is incoming, and if the
 				// resulting c[] exceeds what we already have.
 				if(limit == 1)

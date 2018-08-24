@@ -383,7 +383,7 @@ void btGeneric6DofConstraint::calculateAngleInfo()
 
 void btGeneric6DofConstraint::calculateTransforms()
 {
-	calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 }
 
 void btGeneric6DofConstraint::calculateTransforms(const btTransform& transA,const btTransform& transB)
@@ -417,15 +417,15 @@ void btGeneric6DofConstraint::buildLinearJacobian(
 	const btVector3 & pivotAInW,const btVector3 & pivotBInW)
 {
 	new (&jacLinear) btJacobianEntry(
-        m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-        m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-        pivotAInW - m_rbA.getCenterOfMassPosition(),
-        pivotBInW - m_rbB.getCenterOfMassPosition(),
+        m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+        m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+        pivotAInW - m_rbA->getCenterOfMassPosition(),
+        pivotBInW - m_rbB->getCenterOfMassPosition(),
         normalWorld,
-        m_rbA.getInvInertiaDiagLocal(),
-        m_rbA.getInvMass(),
-        m_rbB.getInvInertiaDiagLocal(),
-        m_rbB.getInvMass());
+        m_rbA->getInvInertiaDiagLocal(),
+        m_rbA->getInvMass(),
+        m_rbB->getInvInertiaDiagLocal(),
+        m_rbB->getInvMass());
 }
 
 
@@ -434,10 +434,10 @@ void btGeneric6DofConstraint::buildAngularJacobian(
 	btJacobianEntry & jacAngular,const btVector3 & jointAxisW)
 {
 	 new (&jacAngular)	btJacobianEntry(jointAxisW,
-                                      m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-                                      m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-                                      m_rbA.getInvInertiaDiagLocal(),
-                                      m_rbB.getInvInertiaDiagLocal());
+                                      m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+                                      m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+                                      m_rbA->getInvInertiaDiagLocal(),
+                                      m_rbB->getInvInertiaDiagLocal());
 
 }
 
@@ -469,7 +469,7 @@ void btGeneric6DofConstraint::buildJacobian()
 			m_angularLimits[i].m_accumulatedImpulse = btScalar(0.);
 		}
 		//calculates transform
-		calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+		calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 
 		//  const btVector3& pivotAInW = m_calculatedTransformA.getOrigin();
 		//  const btVector3& pivotBInW = m_calculatedTransformB.getOrigin();
@@ -478,8 +478,8 @@ void btGeneric6DofConstraint::buildJacobian()
 		btVector3 pivotBInW = m_AnchorPos;
 
 		// not used here
-		//    btVector3 rel_pos1 = pivotAInW - m_rbA.getCenterOfMassPosition();
-		//    btVector3 rel_pos2 = pivotBInW - m_rbB.getCenterOfMassPosition();
+		//    btVector3 rel_pos1 = pivotAInW - m_rbA->getCenterOfMassPosition();
+		//    btVector3 rel_pos2 = pivotBInW - m_rbB->getCenterOfMassPosition();
 
 		btVector3 normalWorld;
 		//linear part
@@ -526,7 +526,7 @@ void btGeneric6DofConstraint::getInfo1 (btConstraintInfo1* info)
 	} else
 	{
 		//prepare constraint
-		calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+		calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 		info->m_numConstraintRows = 0;
 		info->nub = 6;
 		int i;
@@ -570,12 +570,12 @@ void btGeneric6DofConstraint::getInfo2 (btConstraintInfo2* info)
 {
 	btAssert(!m_useSolveConstraintObsolete);
 
-	const btTransform& transA = m_rbA.getCenterOfMassTransform();
-	const btTransform& transB = m_rbB.getCenterOfMassTransform();
-	const btVector3& linVelA = m_rbA.getLinearVelocity();
-	const btVector3& linVelB = m_rbB.getLinearVelocity();
-	const btVector3& angVelA = m_rbA.getAngularVelocity();
-	const btVector3& angVelB = m_rbB.getAngularVelocity();
+	const btTransform& transA = m_rbA->getCenterOfMassTransform();
+	const btTransform& transB = m_rbB->getCenterOfMassTransform();
+	const btVector3& linVelA = m_rbA->getLinearVelocity();
+	const btVector3& linVelB = m_rbB->getLinearVelocity();
+	const btVector3& angVelA = m_rbA->getAngularVelocity();
+	const btVector3& angVelB = m_rbB->getAngularVelocity();
 
 	if(m_useOffsetForConstraintFrame)
 	{ // for stability better to solve angular limits first
@@ -738,8 +738,8 @@ btScalar btGeneric6DofConstraint::getAngle(int axisIndex) const
 
 void btGeneric6DofConstraint::calcAnchorPos(void)
 {
-	btScalar imA = m_rbA.getInvMass();
-	btScalar imB = m_rbB.getInvMass();
+	btScalar imA = m_rbA->getInvMass();
+	btScalar imB = m_rbB->getInvMass();
 	btScalar weight;
 	if(imB == btScalar(0.0))
 	{
@@ -1056,8 +1056,8 @@ void btGeneric6DofConstraint::setAxis(const btVector3& axis1,const btVector3& ax
 	                               xAxis[2], yAxis[2], zAxis[2]);
 	
 	// now get constraint frame in local coordinate systems
-	m_frameInA = m_rbA.getCenterOfMassTransform().inverse() * frameInW;
-	m_frameInB = m_rbB.getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInA = m_rbA->getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInB = m_rbB->getCenterOfMassTransform().inverse() * frameInW;
 	
 	calculateTransforms();
 }

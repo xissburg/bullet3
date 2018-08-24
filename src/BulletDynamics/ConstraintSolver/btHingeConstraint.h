@@ -129,25 +129,6 @@ public:
 
 	void	updateRHS(btScalar	timeStep);
 
-	const btRigidBody& getRigidBodyA() const
-	{
-		return m_rbA;
-	}
-	const btRigidBody& getRigidBodyB() const
-	{
-		return m_rbB;
-	}
-
-	btRigidBody& getRigidBodyA()	
-	{		
-		return m_rbA;	
-	}	
-
-	btRigidBody& getRigidBodyB()	
-	{		
-		return m_rbB;	
-	}
-
 	btTransform& getFrameOffsetA()
 	{
 	return m_rbAFrame;
@@ -232,18 +213,18 @@ public:
 										rbAxisA1.getY(),rbAxisA2.getY(),axisInA.getY(),
 										rbAxisA1.getZ(),rbAxisA2.getZ(),axisInA.getZ() );
 
-		btVector3 axisInB = m_rbA.getCenterOfMassTransform().getBasis() * axisInA;
+		btVector3 axisInB = m_rbA->getCenterOfMassTransform().getBasis() * axisInA;
 
 		btQuaternion rotationArc = shortestArcQuat(axisInA,axisInB);
 		btVector3 rbAxisB1 =  quatRotate(rotationArc,rbAxisA1);
 		btVector3 rbAxisB2 = axisInB.cross(rbAxisB1);
 
-		m_rbBFrame.getOrigin() = m_rbB.getCenterOfMassTransform().inverse()(m_rbA.getCenterOfMassTransform()(pivotInA));
+		m_rbBFrame.getOrigin() = m_rbB->getCenterOfMassTransform().inverse()(m_rbA->getCenterOfMassTransform()(pivotInA));
 
 		m_rbBFrame.getBasis().setValue( rbAxisB1.getX(),rbAxisB2.getX(),axisInB.getX(),
 										rbAxisB1.getY(),rbAxisB2.getY(),axisInB.getY(),
 										rbAxisB1.getZ(),rbAxisB2.getZ(),axisInB.getZ() );
-		m_rbBFrame.getBasis() = m_rbB.getCenterOfMassTransform().getBasis().inverse() * m_rbBFrame.getBasis();
+		m_rbBFrame.getBasis() = m_rbB->getCenterOfMassTransform().getBasis().inverse() * m_rbBFrame.getBasis();
 
 	}
 

@@ -310,9 +310,9 @@ void btGeneric6DofSpring2Constraint::calculateAngleInfo()
 	case RO_XYZ :
 		{
 			//Is this the "line of nodes" calculation choosing planes YZ (B coordinate system) and xy (A coordinate system)? (http://en.wikipedia.org/wiki/Euler_angles)
-			//The two planes are non-homologous, so this is a Tait–Bryan angle formalism and not a proper Euler
+			//The two planes are non-homologous, so this is a Taitï¿½Bryan angle formalism and not a proper Euler
 			//Extrinsic rotations are equal to the reversed order intrinsic rotations so the above xyz extrinsic rotations (axes are fixed) are the same as the zy'x" intrinsic rotations (axes are refreshed after each rotation)
-			//that is why xy and YZ planes are chosen (this will describe a zy'x" intrinsic rotation) (see the figure on the left at http://en.wikipedia.org/wiki/Euler_angles under Tait–Bryan angles)
+			//that is why xy and YZ planes are chosen (this will describe a zy'x" intrinsic rotation) (see the figure on the left at http://en.wikipedia.org/wiki/Euler_angles under Taitï¿½Bryan angles)
 			// x' = Nperp = N.cross(axis2)
 			// y' = N = axis2.cross(axis0)	
 			// z' = z
@@ -410,7 +410,7 @@ void btGeneric6DofSpring2Constraint::calculateAngleInfo()
 
 void btGeneric6DofSpring2Constraint::calculateTransforms()
 {
-	calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 }
 
 void btGeneric6DofSpring2Constraint::calculateTransforms(const btTransform& transA,const btTransform& transB)
@@ -448,7 +448,7 @@ void btGeneric6DofSpring2Constraint::testAngularLimitMotor(int axis_index)
 void btGeneric6DofSpring2Constraint::getInfo1 (btConstraintInfo1* info)
 {
 	//prepare constraint
-	calculateTransforms(m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	calculateTransforms(m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 	info->m_numConstraintRows = 0;
 	info->nub = 0;
 	int i;
@@ -474,12 +474,12 @@ void btGeneric6DofSpring2Constraint::getInfo1 (btConstraintInfo1* info)
 
 void btGeneric6DofSpring2Constraint::getInfo2 (btConstraintInfo2* info)
 {
-	const btTransform& transA = m_rbA.getCenterOfMassTransform();
-	const btTransform& transB = m_rbB.getCenterOfMassTransform();
-	const btVector3& linVelA = m_rbA.getLinearVelocity();
-	const btVector3& linVelB = m_rbB.getLinearVelocity();
-	const btVector3& angVelA = m_rbA.getAngularVelocity();
-	const btVector3& angVelB = m_rbB.getAngularVelocity();
+	const btTransform& transA = m_rbA->getCenterOfMassTransform();
+	const btTransform& transB = m_rbB->getCenterOfMassTransform();
+	const btVector3& linVelA = m_rbA->getLinearVelocity();
+	const btVector3& linVelB = m_rbB->getLinearVelocity();
+	const btVector3& angVelA = m_rbA->getAngularVelocity();
+	const btVector3& angVelB = m_rbB->getAngularVelocity();
 
 	// for stability better to solve angular limits first
 	int row = setAngularLimits(info, 0,transA,transB,linVelA,linVelB,angVelA,angVelB);
@@ -795,13 +795,13 @@ int btGeneric6DofSpring2Constraint::get_limit_motor_info2(
 		btScalar vel = rotational ? angVelA.dot(ax1) - angVelB.dot(ax1) : linVelA.dot(ax1) - linVelB.dot(ax1);
 //		btScalar erp = 0.1;
 		btScalar cfm = BT_ZERO;
-		btScalar mA = BT_ONE / m_rbA.getInvMass();
-		btScalar mB = BT_ONE / m_rbB.getInvMass();
+		btScalar mA = BT_ONE / m_rbA->getInvMass();
+		btScalar mB = BT_ONE / m_rbB->getInvMass();
 		if (rotational) {
 			btScalar rrA = (m_calculatedTransformA.getOrigin() - transA.getOrigin()).length2();
 			btScalar rrB = (m_calculatedTransformB.getOrigin() - transB.getOrigin()).length2();
-			if (m_rbA.getInvMass()) mA = mA * rrA + 1 / (m_rbA.getInvInertiaTensorWorld() * ax1).length();
-			if (m_rbB.getInvMass()) mB = mB * rrB + 1 / (m_rbB.getInvInertiaTensorWorld() * ax1).length();
+			if (m_rbA->getInvMass()) mA = mA * rrA + 1 / (m_rbA->getInvInertiaTensorWorld() * ax1).length();
+			if (m_rbB->getInvMass()) mB = mB * rrB + 1 / (m_rbB->getInvInertiaTensorWorld() * ax1).length();
 		}
 		btScalar m = mA > mB ? mB : mA;
 		btScalar angularfreq = sqrt(ks / m);
@@ -988,8 +988,8 @@ void btGeneric6DofSpring2Constraint::setAxis(const btVector3& axis1,const btVect
 	                              xAxis[2], yAxis[2], zAxis[2]);
 	
 	// now get constraint frame in local coordinate systems
-	m_frameInA = m_rbA.getCenterOfMassTransform().inverse() * frameInW;
-	m_frameInB = m_rbB.getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInA = m_rbA->getCenterOfMassTransform().inverse() * frameInW;
+	m_frameInB = m_rbB->getCenterOfMassTransform().inverse() * frameInW;
 	
 	calculateTransforms();
 }

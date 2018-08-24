@@ -52,15 +52,15 @@ void	btPoint2PointConstraint::buildJacobian()
 		{
 			normal[i] = 1;
 			new (&m_jac[i]) btJacobianEntry(
-			m_rbA.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbB.getCenterOfMassTransform().getBasis().transpose(),
-			m_rbA.getCenterOfMassTransform()*m_pivotInA - m_rbA.getCenterOfMassPosition(),
-			m_rbB.getCenterOfMassTransform()*m_pivotInB - m_rbB.getCenterOfMassPosition(),
+			m_rbA->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbB->getCenterOfMassTransform().getBasis().transpose(),
+			m_rbA->getCenterOfMassTransform()*m_pivotInA - m_rbA->getCenterOfMassPosition(),
+			m_rbB->getCenterOfMassTransform()*m_pivotInB - m_rbB->getCenterOfMassPosition(),
 			normal,
-			m_rbA.getInvInertiaDiagLocal(),
-			m_rbA.getInvMass(),
-			m_rbB.getInvInertiaDiagLocal(),
-			m_rbB.getInvMass());
+			m_rbA->getInvInertiaDiagLocal(),
+			m_rbA->getInvMass(),
+			m_rbB->getInvInertiaDiagLocal(),
+			m_rbB->getInvMass());
 		normal[i] = 0;
 		}
 	}
@@ -91,7 +91,7 @@ void btPoint2PointConstraint::getInfo1NonVirtual (btConstraintInfo1* info)
 
 void btPoint2PointConstraint::getInfo2 (btConstraintInfo2* info)
 {
-	getInfo2NonVirtual(info, m_rbA.getCenterOfMassTransform(),m_rbB.getCenterOfMassTransform());
+	getInfo2NonVirtual(info, m_rbA->getCenterOfMassTransform(),m_rbB->getCenterOfMassTransform());
 }
 
 void btPoint2PointConstraint::getInfo2NonVirtual (btConstraintInfo2* info, const btTransform& body0_trans, const btTransform& body1_trans)
