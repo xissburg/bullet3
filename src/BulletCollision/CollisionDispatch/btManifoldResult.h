@@ -57,6 +57,7 @@ protected:
 	int m_partId1;
 	int m_index0;
 	int m_index1;
+	int m_insertIndex;
 	
 	
 public:
@@ -151,6 +152,11 @@ public:
 	const btCollisionObject* getBody1Internal() const
 	{
 		return m_body1Wrap->getCollisionObject();
+	}
+
+	int getLastInsertIndex() const
+	{
+		return m_insertIndex;
 	}
 
 	btScalar	m_closestPointDistanceThreshold;

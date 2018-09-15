@@ -130,7 +130,7 @@ partId, int triangleIndex)
 	bool isTireFr = convexObj->getUserIndex() == 99135 && m_convexBodyWrap->m_index == 0;
 
 	if (isTireFr) {
-		//printf("@--- Triangle %d -------------\n", triangleIndex);
+	//	printf("@--- Triangle %d -------------\n", triangleIndex);
 	}
 
 	btCollisionObjectWrapper convexBodyWrap(m_convexBodyWrap->m_parent, m_convexBodyWrap->m_shape, m_convexBodyWrap->m_collisionObject, convexWrapTransform, m_convexBodyWrap->m_partId, m_convexBodyWrap->m_index);
@@ -240,7 +240,7 @@ partId, int triangleIndex)
 				btScalar edgeAngle = edgeAngles[j];
 						
 				if (isTireFr) {
-					//printf("Point on Edge %d with angle %f and current angle %f?\n", j, edgeAngle/SIMD_PI*180, a/SIMD_PI*180);
+					//printf("Point on Edge %d with angle %f\n", j, edgeAngle/SIMD_PI*180);
 				}
 
 				if (edgeAngle == SIMD_2_PI) // edge has no adjacent face
@@ -313,17 +313,10 @@ partId, int triangleIndex)
 						if (a < -edgeAngle + 0.0174) 
 						{
 							if (isTireFr) {
-								//printf("Result: Point lies on edge\n");
+								//printf("Result: Point lies on edge with current angle %f\n", a/SIMD_PI*180);
 							}
 
 							cpType = BT_CP_TYPE_EDGE;
-
-							// If the edge angle is small set the normal to the face normal to improve gliding over a mostly
-							// flat surface. GJK seems to generally output slightly noisy normals.
-							if (-edgeAngle < 0.0174) 
-							{
-								pt.m_normalWorldOnB = worldNormal;
-							}
 						}
 						else if (isTireFr) {
 							//printf("Result: Point is on edge but normal is out of its Voronoi region\n");
@@ -345,8 +338,6 @@ partId, int triangleIndex)
 		if (pointOnFace)
 		{ 
 			cpType = BT_CP_TYPE_FACE;
-			// Replace the normal by this more precise one
-			pt.m_normalWorldOnB = worldNormal;
 
 			if (isTireFr) {
 				//printf("Result: Point on Face | margin %f\n", m_collisionMarginTriangle);
@@ -556,20 +547,20 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 					{
 						originalManifold->replaceContactPoint(pt,insertIndex);
 						if (isTireFR) {
-						//printf("*** Replaced ");
+						 //printf("*** Replaced ");
 						}
 					} else
 					{
 						originalManifold->addManifoldPoint(pt);
 						if (isTireFR) {
-						//printf("*** Added ");
+							//printf("*** Added ");
 						}
 					}
 
 					if (isTireFR) {
-					//printf("Point %d ************\n", i);
-					//printf("m_localPointA %f %f %f\n", pt.m_localPointA.x(), pt.m_localPointA.y(), pt.m_localPointA.z());
-					//printf("m_localPointB %f %f %f\n", pt.m_localPointB.x(), pt.m_localPointB.y(), pt.m_localPointB.z());
+						//printf("Point %d ************\n", i);
+						//printf("m_localPointA %f %f %f\n", pt.m_localPointA.x(), pt.m_localPointA.y(), pt.m_localPointA.z());
+						//printf("m_localPointB %f %f %f\n", pt.m_localPointB.x(), pt.m_localPointB.y(), pt.m_localPointB.z());
 					}
 				}
 

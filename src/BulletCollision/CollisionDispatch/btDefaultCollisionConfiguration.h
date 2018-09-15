@@ -79,6 +79,8 @@ protected:
 	btCollisionAlgorithmCreateFunc* m_boxBoxCF;
 	btCollisionAlgorithmCreateFunc*	m_sphereTriangleCF;
 	btCollisionAlgorithmCreateFunc*	m_triangleSphereCF;
+	btCollisionAlgorithmCreateFunc*	m_sphereSegmentTriangleCF;
+	btCollisionAlgorithmCreateFunc*	m_triangleSphereSegmentCF;
 	btCollisionAlgorithmCreateFunc*	m_planeConvexCF;
 	btCollisionAlgorithmCreateFunc*	m_convexPlaneCF;
 	

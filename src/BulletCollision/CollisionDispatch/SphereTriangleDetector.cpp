@@ -19,8 +19,8 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionShapes/btSphereShape.h"
 
 
-SphereTriangleDetector::SphereTriangleDetector(btSphereShape* sphere,btTriangleShape* triangle,btScalar contactBreakingThreshold)
-:m_sphere(sphere),
+SphereTriangleDetector::SphereTriangleDetector(btScalar sphereRadius,btTriangleShape* triangle,btScalar contactBreakingThreshold)
+:m_sphereRadius(sphereRadius),
 m_triangle(triangle),
 m_contactBreakingThreshold(contactBreakingThreshold)
 {
@@ -94,8 +94,7 @@ bool SphereTriangleDetector::collide(const btVector3& sphereCenter,btVector3 &po
 
 	const btVector3* vertices = &m_triangle->getVertexPtr(0);
 	
-	btScalar radius = m_sphere->getRadius();
-	btScalar radiusWithThreshold = radius + contactBreakingThreshold;
+	btScalar radiusWithThreshold = m_sphereRadius + contactBreakingThreshold;
 
 	btVector3 normal = (vertices[1]-vertices[0]).cross(vertices[2]-vertices[0]);
 
@@ -166,12 +165,12 @@ bool SphereTriangleDetector::collide(const btVector3& sphereCenter,btVector3 &po
 				resultNormal = contactToCentre;
 				resultNormal.normalize();
 				point = contactPoint;
-				depth = -(radius-distance);
+				depth = -(m_sphereRadius-distance);
 			} else
 			{
 				resultNormal = normal;
 				point = contactPoint;
-				depth = -radius;
+				depth = -m_sphereRadius;
 			}
 			return true;
 		}

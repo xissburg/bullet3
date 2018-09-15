@@ -107,7 +107,8 @@ btManifoldResult::btManifoldResult(const btCollisionObjectWrapper* body0Wrap,con
 	m_index0(-1),
 	m_index1(-1)
 #endif //DEBUG_PART_INDEX
-	, m_closestPointDistanceThreshold(0)
+	, m_closestPointDistanceThreshold(0),
+	m_insertIndex(-1)
 {
 }
 
@@ -143,7 +144,7 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 	newPt.m_positionWorldOnA = pointA;
 	newPt.m_positionWorldOnB = pointInWorld;
 	
-	int insertIndex = m_manifoldPtr->getCacheEntry(newPt);
+	m_insertIndex = m_manifoldPtr->getCacheEntry(newPt);
 
 	newPt.m_combinedFriction = gCalculateCombinedFrictionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
 	newPt.m_combinedRestitution = gCalculateCombinedRestitutionCallback(m_body0Wrap->getCollisionObject(),m_body1Wrap->getCollisionObject());
@@ -184,13 +185,13 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 	}
 	//printf("depth=%f\n",depth);
 	///@todo, check this for any side effects
-	if (insertIndex >= 0)
+	if (m_insertIndex >= 0)
 	{
 		//const btManifoldPoint& oldPoint = m_manifoldPtr->getContactPoint(insertIndex);
-		m_manifoldPtr->replaceContactPoint(newPt,insertIndex);
+		m_manifoldPtr->replaceContactPoint(newPt,m_insertIndex);
 	} else
 	{
-		insertIndex = m_manifoldPtr->addManifoldPoint(newPt);
+		m_insertIndex = m_manifoldPtr->addManifoldPoint(newPt);
 	}
 	
 	//User can override friction and/or restitution
@@ -202,7 +203,7 @@ void btManifoldResult::addContactPoint(const btVector3& normalOnBInWorld,const b
 		//experimental feature info, for per-triangle material etc.
 		const btCollisionObjectWrapper* obj0Wrap = isSwapped? m_body1Wrap : m_body0Wrap;
 		const btCollisionObjectWrapper* obj1Wrap = isSwapped? m_body0Wrap : m_body1Wrap;
-		(*gContactAddedCallback)(m_manifoldPtr->getContactPoint(insertIndex),obj0Wrap,newPt.m_partId0,newPt.m_index0,obj1Wrap,newPt.m_partId1,newPt.m_index1);
+		(*gContactAddedCallback)(m_manifoldPtr->getContactPoint(m_insertIndex),obj0Wrap,newPt.m_partId0,newPt.m_index0,obj1Wrap,newPt.m_partId1,newPt.m_index1);
 	}
 
 	if (gContactStartedCallback && isNewCollision)

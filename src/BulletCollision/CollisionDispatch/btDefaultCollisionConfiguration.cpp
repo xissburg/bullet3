@@ -31,7 +31,7 @@ subject to the following restrictions:
 #include "BulletCollision/NarrowPhaseCollision/btGjkEpaPenetrationDepthSolver.h"
 #include "BulletCollision/NarrowPhaseCollision/btMinkowskiPenetrationDepthSolver.h"
 #include "BulletCollision/NarrowPhaseCollision/btVoronoiSimplexSolver.h"
-
+#include "BulletCollision/CollisionDispatch/btSphereSegmentTriangleCollisionAlgorithm.h"
 
 
 #include "LinearMath/btPoolAllocator.h"
@@ -88,6 +88,13 @@ btDefaultCollisionConfiguration::btDefaultCollisionConfiguration(const btDefault
 	mem = btAlignedAlloc(sizeof(btSphereTriangleCollisionAlgorithm::CreateFunc),16);
 	m_triangleSphereCF = new (mem)btSphereTriangleCollisionAlgorithm::CreateFunc;
 	m_triangleSphereCF->m_swapped = true;
+
+	mem = btAlignedAlloc(sizeof(btSphereSegmentTriangleCollisionAlgorithm::CreateFunc),16);
+	m_sphereSegmentTriangleCF = new (mem)btSphereSegmentTriangleCollisionAlgorithm::CreateFunc(m_pdSolver);
+	mem = btAlignedAlloc(sizeof(btSphereSegmentTriangleCollisionAlgorithm::CreateFunc),16);
+	m_triangleSphereSegmentCF = new (mem)btSphereSegmentTriangleCollisionAlgorithm::CreateFunc(m_pdSolver);
+	m_triangleSphereSegmentCF->m_swapped = true;
+
 	
 	mem = btAlignedAlloc(sizeof(btBoxBoxCollisionAlgorithm::CreateFunc),16);
 	m_boxBoxCF = new(mem)btBoxBoxCollisionAlgorithm::CreateFunc;
@@ -183,6 +190,12 @@ btDefaultCollisionConfiguration::~btDefaultCollisionConfiguration()
 	btAlignedFree( m_sphereTriangleCF);
 	m_triangleSphereCF->~btCollisionAlgorithmCreateFunc();
 	btAlignedFree( m_triangleSphereCF);
+
+	m_sphereSegmentTriangleCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_sphereSegmentTriangleCF);
+	m_triangleSphereSegmentCF->~btCollisionAlgorithmCreateFunc();
+	btAlignedFree(m_triangleSphereSegmentCF);
+
 	m_boxBoxCF->~btCollisionAlgorithmCreateFunc();
 	btAlignedFree( m_boxBoxCF);
 
@@ -227,6 +240,16 @@ btCollisionAlgorithmCreateFunc* btDefaultCollisionConfiguration::getClosestPoint
 	if ((proxyType0 == TRIANGLE_SHAPE_PROXYTYPE) && (proxyType1 == SPHERE_SHAPE_PROXYTYPE))
 	{
 		return	m_triangleSphereCF;
+	}
+
+	if ((proxyType0 == CUSTOM_CONVEX_SHAPE_TYPE) && (proxyType1 == TRIANGLE_SHAPE_PROXYTYPE))
+	{
+		return m_sphereSegmentTriangleCF;
+	}
+
+	if ((proxyType0 == TRIANGLE_SHAPE_PROXYTYPE) && (proxyType1 == CUSTOM_CONVEX_SHAPE_TYPE))
+	{
+		return m_triangleSphereSegmentCF;
 	}
 
 	if (btBroadphaseProxy::isConvex(proxyType0) && (proxyType1 == STATIC_PLANE_PROXYTYPE))
@@ -310,6 +333,16 @@ btCollisionAlgorithmCreateFunc* btDefaultCollisionConfiguration::getCollisionAlg
 	{
 		return	m_triangleSphereCF;
 	} 
+
+	if ((proxyType0 == CUSTOM_CONVEX_SHAPE_TYPE) && (proxyType1 == TRIANGLE_SHAPE_PROXYTYPE))
+	{
+		return m_sphereSegmentTriangleCF;
+	}
+
+	if ((proxyType0 == TRIANGLE_SHAPE_PROXYTYPE) && (proxyType1 == CUSTOM_CONVEX_SHAPE_TYPE))
+	{
+		return m_triangleSphereSegmentCF;
+	}
 
 	if ((proxyType0 == BOX_SHAPE_PROXYTYPE) && (proxyType1 == BOX_SHAPE_PROXYTYPE))
 	{
