@@ -29,6 +29,7 @@ enum btConstraintFlags
 {
 	BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A = 1,
 	BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B = 2,
+	BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_C = 3,
 };
 
 ///1D constraint along a normal axis between bodyA and bodyB. It can be combined to solve contact and friction constraints.
@@ -42,8 +43,12 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
 	btVector3		m_relpos2CrossNormal;
 	btVector3		m_contactNormal2; //usually m_contactNormal2 == -m_contactNormal1, but not always
 
+	btVector3		m_relpos3CrossNormal;
+	btVector3		m_contactNormal3;
+
 	btVector3		m_angularComponentA;
 	btVector3		m_angularComponentB;
+	btVector3		m_angularComponentC;
 
 	mutable btSimdScalar	m_appliedPushImpulse;
 	mutable btSimdScalar	m_appliedImpulse;
@@ -67,7 +72,7 @@ ATTRIBUTE_ALIGNED16 (struct)	btSolverConstraint
     int			m_frictionIndex;
 	int m_solverBodyIdA;
 	int m_solverBodyIdB;
-
+	int m_solverBodyIdC;
 
 	enum		btSolverConstraintType
 	{

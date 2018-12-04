@@ -79,6 +79,7 @@ public:
         int m_solverConstraint;
         int m_solverBodyA;
         int m_solverBodyB;
+        int m_solverBodyC;
     };
     void internalInitMultipleJoints(btTypedConstraint** constraints, int iBegin, int iEnd);
     void internalConvertMultipleJoints( const btAlignedObjectArray<JointParams>& jointParamsArray, btTypedConstraint** constraints, int iBegin, int iEnd, const btContactSolverInfo& infoGlobal );

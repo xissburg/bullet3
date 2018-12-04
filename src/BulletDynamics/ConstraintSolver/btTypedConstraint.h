@@ -102,6 +102,7 @@ ATTRIBUTE_ALIGNED16(class) btTypedConstraint : public btTypedObject
 protected:
 	btRigidBody*	m_rbA;
 	btRigidBody*	m_rbB;
+	btRigidBody*	m_rbC;
 	btHashMap<btHashInt, btScalar>	m_appliedImpulseMap; // maps a constraint row to its last applied impulse
 	btScalar	m_dbgDrawSize;
 	btJointFeedback*	m_jointFeedback;
@@ -117,6 +118,7 @@ public:
 	virtual ~btTypedConstraint() {};
 	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA);
 	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA,btRigidBody& rbB);
+	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA,btRigidBody& rbB,btRigidBody& rbC);
 
 	struct btConstraintInfo1 {
 		int m_numConstraintRows,nub;
@@ -133,7 +135,7 @@ public:
 		// n*3 jacobian sub matrices, stored by rows. these matrices will have
 		// been initialized to 0 on entry. if the second body is zero then the
 		// J2xx pointers may be 0.
-		btScalar *m_J1linearAxis,*m_J1angularAxis,*m_J2linearAxis,*m_J2angularAxis;
+		btScalar *m_J1linearAxis,*m_J1angularAxis,*m_J2linearAxis,*m_J2angularAxis,*m_J3linearAxis,*m_J3angularAxis;
 
 		// elements to jump from one row to the next in J's
 		int rowskip;
@@ -172,11 +174,12 @@ public:
 	virtual void	buildJacobian() {};
 
 	///internal method used by the constraint solver, don't use them directly
-	virtual	void	setupSolverConstraint(btConstraintArray& ca, int solverBodyA,int solverBodyB, btScalar timeStep)
+	virtual	void	setupSolverConstraint(btConstraintArray& ca, int solverBodyA,int solverBodyB,int solverBodyC, btScalar timeStep)
 	{
         (void)ca;
         (void)solverBodyA;
         (void)solverBodyB;
+		(void)solverBodyC;
         (void)timeStep;
 	}
 
@@ -239,6 +242,10 @@ public:
 	{
 		return *m_rbB;
 	}
+	const btRigidBody& getRigidBodyC() const
+	{
+		return *m_rbC;
+	}
 
 	btRigidBody& getRigidBodyA()
 	{
@@ -247,6 +254,10 @@ public:
 	btRigidBody& getRigidBodyB()
 	{
 		return *m_rbB;
+	}
+	btRigidBody& getRigidBodyC()
+	{
+		return *m_rbC;
 	}
 
 	int getUserConstraintType() const

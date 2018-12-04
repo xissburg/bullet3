@@ -680,7 +680,7 @@ void btSequentialImpulseConstraintSolverMt::internalConvertMultipleJoints( const
             btSolverConstraint* currentConstraintRow = &m_tmpSolverNonContactConstraintPool[ currentRow ];
             btTypedConstraint* constraint = constraints[ i ];
 
-            convertJoint( currentConstraintRow, constraint, info1, jointParams.m_solverBodyA, jointParams.m_solverBodyB, infoGlobal );
+            convertJoint( currentConstraintRow, constraint, info1, jointParams.m_solverBodyA, jointParams.m_solverBodyB, jointParams.m_solverBodyC, infoGlobal );
         }
     }
 }
@@ -749,6 +749,7 @@ void btSequentialImpulseConstraintSolverMt::convertJoints(btTypedConstraint** co
             params.m_solverConstraint = totalNumRows;
             params.m_solverBodyA = getOrInitSolverBody( constraint->getRigidBodyA(), infoGlobal.m_timeStep );
             params.m_solverBodyB = getOrInitSolverBody( constraint->getRigidBodyB(), infoGlobal.m_timeStep );
+            params.m_solverBodyC = getOrInitSolverBody( constraint->getRigidBodyC(), infoGlobal.m_timeStep );
 		}
         else
 		{

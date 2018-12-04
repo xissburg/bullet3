@@ -28,6 +28,7 @@ class btCollisionObject;
 #include "BulletDynamics/ConstraintSolver/btConstraintSolver.h"
 
 typedef btSimdScalar(*btSingleConstraintRowSolver)(btSolverBody&, btSolverBody&, const btSolverConstraint&);
+typedef btSimdScalar(*btSingleConstraintRowSolver3)(btSolverBody&, btSolverBody&, btSolverBody&, const btSolverConstraint&);
 typedef void (*btPrepareSolverConstraint)(btSolverConstraint&, btSolverBody&, btSolverBody&);
 
 extern btPrepareSolverConstraint gPrepareSolverConstraint;
@@ -59,6 +60,8 @@ protected:
 
 	btSingleConstraintRowSolver m_resolveSingleConstraintRowGeneric;
 	btSingleConstraintRowSolver m_resolveSingleConstraintRowGenericSplitSpin;
+	btSingleConstraintRowSolver3 m_resolveSingleConstraintRowGeneric3;
+	btSingleConstraintRowSolver3 m_resolveSingleConstraintRowGenericSplitSpin3;
 	btSingleConstraintRowSolver m_resolveSingleConstraintRowLowerLimit;
     btSingleConstraintRowSolver m_resolveSplitPenetrationImpulse;
     int m_cachedSolverMode;  // used to check if SOLVER_SIMD flag has been changed
@@ -100,7 +103,7 @@ protected:
 	void	convertContact(btPersistentManifold* manifold,const btContactSolverInfo& infoGlobal);
 
     virtual void convertJoints(btTypedConstraint** constraints,int numConstraints,const btContactSolverInfo& infoGlobal);
-    void convertJoint(btSolverConstraint* currentConstraintRow, btTypedConstraint* constraint, const btTypedConstraint::btConstraintInfo1& info1, int solverBodyIdA, int solverBodyIdB, const btContactSolverInfo& infoGlobal);
+    void convertJoint(btSolverConstraint* currentConstraintRow, btTypedConstraint* constraint, const btTypedConstraint::btConstraintInfo1& info1, int solverBodyIdA, int solverBodyIdB, int solverBodyIdC, const btContactSolverInfo& infoGlobal);
 
     virtual void convertBodies(btCollisionObject** bodies, int numBodies, const btContactSolverInfo& infoGlobal);
 
@@ -119,8 +122,10 @@ protected:
 	void	initSolverBody(btSolverBody* solverBody, btCollisionObject* collisionObject, btScalar timeStep);
 
 	btSimdScalar	resolveSingleConstraintRowGeneric(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
+	btSimdScalar	resolveSingleConstraintRowGeneric(btSolverBody& bodyA,btSolverBody& bodyB,btSolverBody& bodyC,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowGenericSIMD(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowGenericSplitSpin(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
+	btSimdScalar	resolveSingleConstraintRowGenericSplitSpin(btSolverBody& bodyA,btSolverBody& bodyB,btSolverBody& bodyC,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowLowerLimit(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSingleConstraintRowLowerLimitSIMD(btSolverBody& bodyA,btSolverBody& bodyB,const btSolverConstraint& contactConstraint);
 	btSimdScalar	resolveSplitPenetrationImpulse(btSolverBody& bodyA,btSolverBody& bodyB, const btSolverConstraint& contactConstraint)

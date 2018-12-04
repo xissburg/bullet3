@@ -31,6 +31,7 @@ m_needsFeedback(false),
 m_overrideNumSolverIterations(-1),
 m_rbA(&rbA),
 m_rbB(&getFixedBody()),
+m_rbC(&getFixedBody()),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
 m_jointFeedback(0),
 m_sortIndex(0)
@@ -48,12 +49,28 @@ m_needsFeedback(false),
 m_overrideNumSolverIterations(-1),
 m_rbA(&rbA),
 m_rbB(&rbB),
+m_rbC(&getFixedBody()),
 m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
 m_jointFeedback(0)
 {
 }
 
 
+btTypedConstraint::btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA,btRigidBody& rbB,btRigidBody& rbC)
+:btTypedObject(type),
+m_userConstraintType(-1),
+m_userConstraintPtr((void*)-1),
+m_breakingImpulseThreshold(SIMD_INFINITY),
+m_isEnabled(true),
+m_needsFeedback(false),
+m_overrideNumSolverIterations(-1),
+m_rbA(&rbA),
+m_rbB(&rbB),
+m_rbC(&rbC),
+m_dbgDrawSize(DEFAULT_DEBUGDRAW_SIZE),
+m_jointFeedback(0)
+{
+}
 
 
 btScalar btTypedConstraint::getMotorFactor(btScalar pos, btScalar lowLim, btScalar uppLim, btScalar vel, btScalar timeFact)
