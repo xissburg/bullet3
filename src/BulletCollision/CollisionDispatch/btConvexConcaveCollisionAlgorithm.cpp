@@ -13,7 +13,6 @@ subject to the following restrictions:
 3. This notice may not be removed or altered from any source distribution.
 */
 
-
 #include "btConvexConcaveCollisionAlgorithm.h"
 #include "LinearMath/btQuickprof.h"
 #include "BulletCollision/CollisionDispatch/btCollisionObject.h"
@@ -31,10 +30,10 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionShapes/btSdfCollisionShape.h"
 #include "BulletCollision/CollisionDispatch/btInternalEdgeUtility.h"
 
-btConvexConcaveCollisionAlgorithm::btConvexConcaveCollisionAlgorithm( const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap,const btCollisionObjectWrapper* body1Wrap,bool isSwapped)
-: btActivatingCollisionAlgorithm(ci,body0Wrap,body1Wrap),
-m_btConvexTriangleCallback(ci.m_dispatcher1,body0Wrap,body1Wrap,isSwapped),
-m_isSwapped(isSwapped)
+btConvexConcaveCollisionAlgorithm::btConvexConcaveCollisionAlgorithm(const btCollisionAlgorithmConstructionInfo& ci, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped)
+	: btActivatingCollisionAlgorithm(ci, body0Wrap, body1Wrap),
+	  m_btConvexTriangleCallback(ci.m_dispatcher1, body0Wrap, body1Wrap, isSwapped),
+	  m_isSwapped(isSwapped)
 {
 }
 
@@ -42,7 +41,7 @@ btConvexConcaveCollisionAlgorithm::~btConvexConcaveCollisionAlgorithm()
 {
 }
 
-void	btConvexConcaveCollisionAlgorithm::getAllContactManifolds(btManifoldArray&	manifoldArray)
+void btConvexConcaveCollisionAlgorithm::getAllContactManifolds(btManifoldArray& manifoldArray)
 {
 	if (m_btConvexTriangleCallback.m_manifoldPtr)
 	{
@@ -50,37 +49,32 @@ void	btConvexConcaveCollisionAlgorithm::getAllContactManifolds(btManifoldArray&	
 	}
 }
 
-
-btConvexTriangleCallback::btConvexTriangleCallback(btDispatcher*  dispatcher,const btCollisionObjectWrapper* body0Wrap,const btCollisionObjectWrapper* body1Wrap,bool isSwapped):
-	  m_dispatcher(dispatcher),
-	m_dispatchInfoPtr(0)
+btConvexTriangleCallback::btConvexTriangleCallback(btDispatcher* dispatcher, const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, bool isSwapped) : m_dispatcher(dispatcher),
+																																													 m_dispatchInfoPtr(0)
 {
-	m_convexBodyWrap = isSwapped? body1Wrap:body0Wrap;
-	m_triBodyWrap = isSwapped? body0Wrap:body1Wrap;
-	
-	  //
-	  // create the manifold from the dispatcher 'manifold pool'
-	  //
-	  m_manifoldPtr = m_dispatcher->getNewManifold(m_convexBodyWrap->getCollisionObject(),m_triBodyWrap->getCollisionObject());
+	m_convexBodyWrap = isSwapped ? body1Wrap : body0Wrap;
+	m_triBodyWrap = isSwapped ? body0Wrap : body1Wrap;
 
-  	  clearCache();
+	//
+	// create the manifold from the dispatcher 'manifold pool'
+	//
+	m_manifoldPtr = m_dispatcher->getNewManifold(m_convexBodyWrap->getCollisionObject(), m_triBodyWrap->getCollisionObject());
+
+	clearCache();
 }
 
 btConvexTriangleCallback::~btConvexTriangleCallback()
 {
 	clearCache();
-	m_dispatcher->releaseManifold( m_manifoldPtr );
-  
+	m_dispatcher->releaseManifold(m_manifoldPtr);
 }
-  
 
-void	btConvexTriangleCallback::clearCache()
+void btConvexTriangleCallback::clearCache()
 {
 	m_dispatcher->clearManifold(m_manifoldPtr);
 }
 
-void btConvexTriangleCallback::processTriangle(btVector3* triangle,int
-partId, int triangleIndex)
+void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, int triangleIndex)
 {
 	BT_PROFILE("btConvexTriangleCallback::processTriangle");
 
@@ -89,8 +83,11 @@ partId, int triangleIndex)
 		return;
 	}
 
-        //just for debugging purposes
-        //printf("triangle %d",m_triangleCount++);
+	//just for debugging purposes
+	//printf("triangle %d",m_triangleCount++);
+
+	btCollisionAlgorithmConstructionInfo ci;
+	ci.m_dispatcher1 = m_dispatcher;
 
 #if 0	
 	
@@ -105,6 +102,7 @@ partId, int triangleIndex)
 		m_dispatchInfoPtr->m_debugDraw->drawLine(tr(triangle[2]),tr(triangle[0]),color);
 	}
 #endif
+<<<<<<< HEAD
 	
 	if (!m_convexBodyWrap->getCollisionShape()->isConvex())
 	{
@@ -207,6 +205,20 @@ partId, int triangleIndex)
 	if (isTireFr) {
 		if (tempManifold->getNumContacts() == 0) {
 			//printf("No points.. o_o\n");
+=======
+
+	if (m_convexBodyWrap->getCollisionShape()->isConvex())
+	{
+		btTriangleShape tm(triangle[0], triangle[1], triangle[2]);
+		tm.setMargin(m_collisionMarginTriangle);
+
+		btCollisionObjectWrapper triObWrap(m_triBodyWrap, &tm, m_triBodyWrap->getCollisionObject(), m_triBodyWrap->getWorldTransform(), partId, triangleIndex);  //correct transform?
+		btCollisionAlgorithm* colAlgo = 0;
+
+		if (m_resultOut->m_closestPointDistanceThreshold > 0)
+		{
+			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, 0, BT_CLOSEST_POINT_ALGORITHMS);
+>>>>>>> master
 		}
 		else if (tempManifold->getNumContacts() != 1) {
 			//printf("More than one point.. :O\n");
@@ -225,6 +237,7 @@ partId, int triangleIndex)
 		// Check if point lies in the voronoi region of edges or vertices
 		for (int j = 0; j < 3; ++j) 
 		{
+<<<<<<< HEAD
 			btVector3 e0, e1;
 			tm.getEdge(j, e0, e1);
 			btVector3 edge = e1 - e0;
@@ -345,6 +358,26 @@ partId, int triangleIndex)
 		}
 
 		if (cpType != BT_CP_TYPE_NONE)
+=======
+			tmpWrap = m_resultOut->getBody0Wrap();
+			m_resultOut->setBody0Wrap(&triObWrap);
+			m_resultOut->setShapeIdentifiersA(partId, triangleIndex);
+		}
+		else
+		{
+			tmpWrap = m_resultOut->getBody1Wrap();
+			m_resultOut->setBody1Wrap(&triObWrap);
+			m_resultOut->setShapeIdentifiersB(partId, triangleIndex);
+		}
+
+		colAlgo->processCollision(m_convexBodyWrap, &triObWrap, *m_dispatchInfoPtr, m_resultOut);
+
+		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
+		{
+			m_resultOut->setBody0Wrap(tmpWrap);
+		}
+		else
+>>>>>>> master
 		{
 			pt.m_cpType = cpType;
 
@@ -356,6 +389,7 @@ partId, int triangleIndex)
 				pt.m_localPointA -= localTranslation;
 			}
 
+<<<<<<< HEAD
 			pt.m_positionWorldOnA -= translation;
 			pt.m_positionWorldOnB -= translation;
 
@@ -404,11 +438,14 @@ partId, int triangleIndex)
 	colAlgo->~btCollisionAlgorithm();
 	m_dispatcher->freeCollisionAlgorithm(colAlgo);
 
+=======
+		colAlgo->~btCollisionAlgorithm();
+		ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
+	}
+>>>>>>> master
 }
 
-
-
-void	btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTriangle, const btDispatcherInfo& dispatchInfo, const btCollisionObjectWrapper* convexBodyWrap, const btCollisionObjectWrapper* triBodyWrap, btManifoldResult* resultOut)
+void btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTriangle, const btDispatcherInfo& dispatchInfo, const btCollisionObjectWrapper* convexBodyWrap, const btCollisionObjectWrapper* triBodyWrap, btManifoldResult* resultOut)
 {
 	m_convexBodyWrap = convexBodyWrap;
 	m_triBodyWrap = triBodyWrap;
@@ -429,16 +466,14 @@ void	btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTr
 
 	m_aabbMax += extra;
 	m_aabbMin -= extra;
-
 }
 
 void btConvexConcaveCollisionAlgorithm::clearCache()
 {
 	m_btConvexTriangleCallback.clearCache();
-
 }
 
-void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, const btDispatcherInfo& dispatchInfo, btManifoldResult* resultOut)
+void btConvexConcaveCollisionAlgorithm::processCollision(const btCollisionObjectWrapper* body0Wrap, const btCollisionObjectWrapper* body1Wrap, const btDispatcherInfo& dispatchInfo, btManifoldResult* resultOut)
 {
 	BT_PROFILE("btConvexConcaveCollisionAlgorithm::processCollision");
 
@@ -452,7 +487,6 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 			btSdfCollisionShape* sdfShape = (btSdfCollisionShape*)triBodyWrap->getCollisionShape();
 			if (convexBodyWrap->getCollisionShape()->isConvex())
 			{
-
 				btConvexShape* convex = (btConvexShape*)convexBodyWrap->getCollisionShape();
 				btAlignedObjectArray<btVector3> queryVertices;
 
@@ -473,7 +507,6 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 					queryVertices.push_back(btVector3(0, 0, 0));
 					btSphereShape* sphere = (btSphereShape*)convex;
 					maxDist = sphere->getRadius() + SIMD_EPSILON;
-
 				}
 				if (queryVertices.size())
 				{
@@ -484,7 +517,7 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 					for (int v = 0; v < queryVertices.size(); v++)
 					{
 						const btVector3& vtx = queryVertices[v];
-						btVector3 vtxWorldSpace = convexBodyWrap->getWorldTransform()*vtx;
+						btVector3 vtxWorldSpace = convexBodyWrap->getWorldTransform() * vtx;
 						btVector3 vtxInSdf = triBodyWrap->getWorldTransform().invXform(vtxWorldSpace);
 
 						btVector3 normalLocal;
@@ -494,30 +527,30 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 							if (dist <= maxDist)
 							{
 								normalLocal.safeNormalize();
-								btVector3 normal = triBodyWrap->getWorldTransform().getBasis()*normalLocal;
+								btVector3 normal = triBodyWrap->getWorldTransform().getBasis() * normalLocal;
 
 								if (convex->getShapeType() == SPHERE_SHAPE_PROXYTYPE)
 								{
 									btSphereShape* sphere = (btSphereShape*)convex;
 									dist -= sphere->getRadius();
-									vtxWorldSpace -= sphere->getRadius()*normal;
-
+									vtxWorldSpace -= sphere->getRadius() * normal;
 								}
-								resultOut->addContactPoint(normal,vtxWorldSpace-normal*dist, dist);
+								resultOut->addContactPoint(normal, vtxWorldSpace - normal * dist, dist);
 							}
 						}
 					}
 					resultOut->refreshContactPoints();
 				}
-
 			}
-		} else
+		}
+		else
 		{
-			const btConcaveShape* concaveShape = static_cast<const btConcaveShape*>( triBodyWrap->getCollisionShape());
-		
+			const btConcaveShape* concaveShape = static_cast<const btConcaveShape*>(triBodyWrap->getCollisionShape());
+
 			if (convexBodyWrap->getCollisionShape()->isConvex())
 			{
 				btScalar collisionMarginTriangle = concaveShape->getMargin();
+<<<<<<< HEAD
 
 				bool isTireFR = convexBodyWrap->getCollisionObject()->getUserIndex() == 99135 && convexBodyWrap->m_index == 0;
 				if (isTireFR) {
@@ -566,25 +599,30 @@ void btConvexConcaveCollisionAlgorithm::processCollision (const btCollisionObjec
 
 				m_dispatcher->releaseManifold(tempManifold);
 
+=======
+
+				resultOut->setPersistentManifold(m_btConvexTriangleCallback.m_manifoldPtr);
+				m_btConvexTriangleCallback.setTimeStepAndCounters(collisionMarginTriangle, dispatchInfo, convexBodyWrap, triBodyWrap, resultOut);
+
+				m_btConvexTriangleCallback.m_manifoldPtr->setBodies(convexBodyWrap->getCollisionObject(), triBodyWrap->getCollisionObject());
+
+				concaveShape->processAllTriangles(&m_btConvexTriangleCallback, m_btConvexTriangleCallback.getAabbMin(), m_btConvexTriangleCallback.getAabbMax());
+
+>>>>>>> master
 				resultOut->refreshContactPoints();
 
 				m_btConvexTriangleCallback.clearWrapperData();
-	
 			}
 		}
-	
 	}
-
 }
 
-
-btScalar btConvexConcaveCollisionAlgorithm::calculateTimeOfImpact(btCollisionObject* body0,btCollisionObject* body1,const btDispatcherInfo& dispatchInfo,btManifoldResult* resultOut)
+btScalar btConvexConcaveCollisionAlgorithm::calculateTimeOfImpact(btCollisionObject* body0, btCollisionObject* body1, const btDispatcherInfo& dispatchInfo, btManifoldResult* resultOut)
 {
 	(void)resultOut;
 	(void)dispatchInfo;
 	btCollisionObject* convexbody = m_isSwapped ? body1 : body0;
 	btCollisionObject* triBody = m_isSwapped ? body0 : body1;
-
 
 	//quick approximation using raycast, todo: hook up to the continuous collision detection (one of the btConvexCast)
 
@@ -604,25 +642,23 @@ btScalar btConvexConcaveCollisionAlgorithm::calculateTimeOfImpact(btCollisionObj
 	btTransform convexFromLocal = triInv * convexbody->getWorldTransform();
 	btTransform convexToLocal = triInv * convexbody->getInterpolationWorldTransform();
 
-	struct LocalTriangleSphereCastCallback	: public btTriangleCallback
+	struct LocalTriangleSphereCastCallback : public btTriangleCallback
 	{
 		btTransform m_ccdSphereFromTrans;
 		btTransform m_ccdSphereToTrans;
-		btTransform	m_meshTransform;
+		btTransform m_meshTransform;
 
-		btScalar	m_ccdSphereRadius;
-		btScalar	m_hitFraction;
-	
+		btScalar m_ccdSphereRadius;
+		btScalar m_hitFraction;
 
-		LocalTriangleSphereCastCallback(const btTransform& from,const btTransform& to,btScalar ccdSphereRadius,btScalar hitFraction)
-			:m_ccdSphereFromTrans(from),
-			m_ccdSphereToTrans(to),
-			m_ccdSphereRadius(ccdSphereRadius),
-			m_hitFraction(hitFraction)
-		{			
+		LocalTriangleSphereCastCallback(const btTransform& from, const btTransform& to, btScalar ccdSphereRadius, btScalar hitFraction)
+			: m_ccdSphereFromTrans(from),
+			  m_ccdSphereToTrans(to),
+			  m_ccdSphereRadius(ccdSphereRadius),
+			  m_hitFraction(hitFraction)
+		{
 		}
-		
-		
+
 		virtual void processTriangle(btVector3* triangle, int partId, int triangleIndex)
 		{
 			BT_PROFILE("processTriangle");
@@ -633,29 +669,23 @@ btScalar btConvexConcaveCollisionAlgorithm::calculateTimeOfImpact(btCollisionObj
 			ident.setIdentity();
 			btConvexCast::CastResult castResult;
 			castResult.m_fraction = m_hitFraction;
-			btSphereShape	pointShape(m_ccdSphereRadius);
-			btTriangleShape	triShape(triangle[0],triangle[1],triangle[2]);
-			btVoronoiSimplexSolver	simplexSolver;
-			btSubsimplexConvexCast convexCaster(&pointShape,&triShape,&simplexSolver);
+			btSphereShape pointShape(m_ccdSphereRadius);
+			btTriangleShape triShape(triangle[0], triangle[1], triangle[2]);
+			btVoronoiSimplexSolver simplexSolver;
+			btSubsimplexConvexCast convexCaster(&pointShape, &triShape, &simplexSolver);
 			//GjkConvexCast	convexCaster(&pointShape,convexShape,&simplexSolver);
 			//ContinuousConvexCollision convexCaster(&pointShape,convexShape,&simplexSolver,0);
 			//local space?
 
-			if (convexCaster.calcTimeOfImpact(m_ccdSphereFromTrans,m_ccdSphereToTrans,
-				ident,ident,castResult))
+			if (convexCaster.calcTimeOfImpact(m_ccdSphereFromTrans, m_ccdSphereToTrans,
+											  ident, ident, castResult))
 			{
 				if (m_hitFraction > castResult.m_fraction)
 					m_hitFraction = castResult.m_fraction;
 			}
-
 		}
-
 	};
 
-
-	
-
-	
 	if (triBody->getCollisionShape()->isConcave())
 	{
 		btVector3 rayAabbMin = convexFromLocal.getOrigin();
@@ -663,33 +693,30 @@ btScalar btConvexConcaveCollisionAlgorithm::calculateTimeOfImpact(btCollisionObj
 		btVector3 rayAabbMax = convexFromLocal.getOrigin();
 		rayAabbMax.setMax(convexToLocal.getOrigin());
 		btScalar ccdRadius0 = convexbody->getCcdSweptSphereRadius();
-		rayAabbMin -= btVector3(ccdRadius0,ccdRadius0,ccdRadius0);
-		rayAabbMax += btVector3(ccdRadius0,ccdRadius0,ccdRadius0);
+		rayAabbMin -= btVector3(ccdRadius0, ccdRadius0, ccdRadius0);
+		rayAabbMax += btVector3(ccdRadius0, ccdRadius0, ccdRadius0);
 
-		btScalar curHitFraction = btScalar(1.); //is this available?
-		LocalTriangleSphereCastCallback raycastCallback(convexFromLocal,convexToLocal,
-			convexbody->getCcdSweptSphereRadius(),curHitFraction);
+		btScalar curHitFraction = btScalar(1.);  //is this available?
+		LocalTriangleSphereCastCallback raycastCallback(convexFromLocal, convexToLocal,
+														convexbody->getCcdSweptSphereRadius(), curHitFraction);
 
 		raycastCallback.m_hitFraction = convexbody->getHitFraction();
 
 		btCollisionObject* concavebody = triBody;
 
-		btConcaveShape* triangleMesh = (btConcaveShape*) concavebody->getCollisionShape();
-		
+		btConcaveShape* triangleMesh = (btConcaveShape*)concavebody->getCollisionShape();
+
 		if (triangleMesh)
 		{
-			triangleMesh->processAllTriangles(&raycastCallback,rayAabbMin,rayAabbMax);
+			triangleMesh->processAllTriangles(&raycastCallback, rayAabbMin, rayAabbMax);
 		}
-	
-
 
 		if (raycastCallback.m_hitFraction < convexbody->getHitFraction())
 		{
-			convexbody->setHitFraction( raycastCallback.m_hitFraction);
+			convexbody->setHitFraction(raycastCallback.m_hitFraction);
 			return raycastCallback.m_hitFraction;
 		}
 	}
 
 	return btScalar(1.);
-
 }
