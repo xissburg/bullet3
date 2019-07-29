@@ -721,7 +721,7 @@ void btSequentialImpulseConstraintSolverMt::convertJoints(btTypedConstraint** co
 			params.m_solverConstraint = totalNumRows;
 			params.m_solverBodyA = getOrInitSolverBody(constraint->getRigidBodyA(), infoGlobal.m_timeStep);
 			params.m_solverBodyB = getOrInitSolverBody(constraint->getRigidBodyB(), infoGlobal.m_timeStep);
-			params.m_solverBodyB = getOrInitSolverBody(constraint->getRigidBodyC(), infoGlobal.m_timeStep);
+			params.m_solverBodyC = getOrInitSolverBody(constraint->getRigidBodyC(), infoGlobal.m_timeStep);
 		}
 		else
 		{
