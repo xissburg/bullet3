@@ -184,205 +184,218 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 	}
 	
 	int hash = btGetHash(partId, triangleIndex);
-	const btTriangleInfo* info = trimeshShape->getTriangleInfoMap()->find(hash);
+	const btTriangleInfoMap* infoMap = trimeshShape->getTriangleInfoMap();
 
-	// TODO: check if info is null and if it is just add all points, or maybe embed this into the triangle
-	// mesh shape and calculate it on initialization.
-	btAssert(info);
-	
-	btScalar edgeAngles[] = {info->m_edgeV0V1Angle, info->m_edgeV1V2Angle, info->m_edgeV2V0Angle};
-	bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
-
-	btVector3 localNormal;
-	tm.calcNormal(localNormal);
-	if (!swapped) localNormal *= -1;
-	const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
-	btVector3 worldNormal = triBasis * localNormal;
-
-	const btScalar distToVertex = 0.01;
-
-	if (isTireFr) {
-		if (tempManifold->getNumContacts() == 0) {
-			//printf("No points.. o_o\n");
-		}
-		else if (tempManifold->getNumContacts() != 1) {
-			//printf("More than one point.. :O\n");
-		}
-	}
-
-	// tempManifold->getNumContacts() should be 1 since both objects are convex
-	for (int i = 0; i < tempManifold->getNumContacts(); ++i)
+	if (infoMap)
 	{
-		bool pointOnFace = true;
-		btContactPointType cpType = BT_CP_TYPE_NONE;
-		btManifoldPoint& pt = tempManifold->getContactPoint(i);
-		const btVector3& pA = swapped ? pt.m_localPointB : pt.m_localPointA;
-		const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
+		const btTriangleInfo* info = infoMap->find(hash);
 
-		// Check if point lies in the voronoi region of edges or vertices
-		for (int j = 0; j < 3; ++j) 
+		// TODO: check if info is null and if it is just add all points, or maybe embed this into the triangle
+		// mesh shape and calculate it on initialization.
+		btAssert(info);
+		
+		btScalar edgeAngles[] = {info->m_edgeV0V1Angle, info->m_edgeV1V2Angle, info->m_edgeV2V0Angle};
+		bool swapped = tempManifold->getBody0() != m_resultOut->getBody0Wrap()->getCollisionObject();
+
+		btVector3 localNormal;
+		tm.calcNormal(localNormal);
+		if (!swapped) localNormal *= -1;
+		const btMatrix3x3& triBasis = triObWrap.getWorldTransform().getBasis();
+		btVector3 worldNormal = triBasis * localNormal;
+
+		const btScalar distToVertex = 0.01;
+
+		if (isTireFr) {
+			if (tempManifold->getNumContacts() == 0) {
+				//printf("No points.. o_o\n");
+			}
+			else if (tempManifold->getNumContacts() != 1) {
+				//printf("More than one point.. :O\n");
+			}
+		}
+
+		// tempManifold->getNumContacts() should be 1 since both objects are convex
+		for (int i = 0; i < tempManifold->getNumContacts(); ++i)
 		{
-			btVector3 e0, e1;
-			tm.getEdge(j, e0, e1);
-			btVector3 edge = e1 - e0;
-			btVector3 p = pA - e0;
-			
-			// Calc distance from pA to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
-			btScalar t = p.dot(edge) / edge.dot(edge);
-			p -= t * edge;
-			btScalar distance = btSqrt(p.dot(p));
+			bool pointOnFace = true;
+			btContactPointType cpType = BT_CP_TYPE_NONE;
+			btManifoldPoint& pt = tempManifold->getContactPoint(i);
+			const btVector3& pA = swapped ? pt.m_localPointB : pt.m_localPointA;
+			const btVector3& contactNormal = swapped ? pt.m_normalWorldOnB : -pt.m_normalWorldOnB;
 
-			// Check if the point on the triangle is near the edge 
-			if (distance < m_collisionMarginTriangle) {
-				btScalar edgeAngle = edgeAngles[j];
-						
-				if (isTireFr) {
-					//printf("Point on Edge %d with angle %f\n", j, edgeAngle/SIMD_PI*180);
-				}
+			// Check if point lies in the voronoi region of edges or vertices
+			for (int j = 0; j < 3; ++j) 
+			{
+				btVector3 e0, e1;
+				tm.getEdge(j, e0, e1);
+				btVector3 edge = e1 - e0;
+				btVector3 p = pA - e0;
+				
+				// Calc distance from pA to edge (see SegmentSqrDistance in SphereTriangleDetector.cpp)
+				btScalar t = p.dot(edge) / edge.dot(edge);
+				p -= t * edge;
+				btScalar distance = btSqrt(p.dot(p));
 
-				if (edgeAngle == SIMD_2_PI) // edge has no adjacent face
-				{
-					pointOnFace = false;
-
-					if ((pA - e0).length2() < distToVertex*distToVertex || (pA - e1).length2() < distToVertex*distToVertex) 
-					{
-						cpType = BT_CP_TYPE_VERTEX;
-
-						if (isTireFr) {
-							//printf("Result: Point on vertex with no adjacent face\n");
-						}
+				// Check if the point on the triangle is near the edge 
+				if (distance < m_collisionMarginTriangle) {
+					btScalar edgeAngle = edgeAngles[j];
+							
+					if (isTireFr) {
+						//printf("Point on Edge %d with angle %f\n", j, edgeAngle/SIMD_PI*180);
 					}
-					else 
+
+					if (edgeAngle == SIMD_2_PI) // edge has no adjacent face
 					{
-						cpType = BT_CP_TYPE_EDGE;
+						pointOnFace = false;
 
-						if (isTireFr) {
-							//printf("Result: Point on edge with no adjacent face\n");
-						}
-					}
-				}
-				else if (edgeAngle <= 0) // convex edge
-				{ 
-					pointOnFace = false;
-					bool pointOnVertex0 = (pA - e0).length2() < distToVertex*distToVertex;
-					bool pointOnVertex1 = (pA - e1).length2() < distToVertex*distToVertex;
-
-					if (pointOnVertex0 || pointOnVertex1) 
-					{
-						// This point must be within the limits of the voronoi region of both edges which share a vertex						
-						// Project contact normal onto plane orthogonal to edge
-						btVector3 e0n = triBasis * edge.normalized();
-						btVector3 n0 = contactNormal - e0n * contactNormal.dot(e0n);
-						btScalar c0 = n0.dot(worldNormal);
-						btScalar a0 = btAcos(c0);
-
-						int k = pointOnVertex0 ? (j-1)%3 : (j+1)%3;
-						btVector3 e10, e11;
-						tm.getEdge(k, e10, e11);
-						btVector3 edge1 = e11 - e10;
-						btVector3 e1n = triBasis * edge1.normalized();
-						btVector3 n1 = contactNormal - e1n * contactNormal.dot(e1n);
-						btScalar c1 = n1.dot(worldNormal);
-						btScalar a1 = btAcos(c1);
-
-						btScalar edgeAngle1 = edgeAngles[k];
-
-						if (a0 < -edgeAngle + 0.0174 && a1 < -edgeAngle1 + 0.0174)
+						if ((pA - e0).length2() < distToVertex*distToVertex || (pA - e1).length2() < distToVertex*distToVertex) 
 						{
 							cpType = BT_CP_TYPE_VERTEX;
 
 							if (isTireFr) {
-								//printf("Result: Point on Vertex %d\n", pointOnVertex0 ? 0 : 1);
+								//printf("Result: Point on vertex with no adjacent face\n");
 							}
 						}
-						else if (isTireFr) {
-							//printf("Result: Point is on vertex but normal is out of its Voronoi region\n");
-						}
-					}
-					else 
-					{
-						btScalar c = contactNormal.dot(worldNormal);
-						// TODO: store the sine of the angle instead in the triangle info map or smth and get rid of this btAcos
-						btScalar a = btAcos(c);
-
-						// Add it if it's in the edge's voronoi region. Tolerance might require tunning. Small values 
-						// seem to deteriorate contact persistence.
-						if (a < -edgeAngle + 0.0174) 
+						else 
 						{
-							if (isTireFr) {
-								//printf("Result: Point lies on edge with current angle %f\n", a/SIMD_PI*180);
-							}
-
 							cpType = BT_CP_TYPE_EDGE;
-						}
-						else if (isTireFr) {
-							//printf("Result: Point is on edge but normal is out of its Voronoi region\n");
+
+							if (isTireFr) {
+								//printf("Result: Point on edge with no adjacent face\n");
+							}
 						}
 					}
-				}
-				else { // concave edge
-					pointOnFace = contactNormal.dot(worldNormal) > 0.9998;
+					else if (edgeAngle <= 0) // convex edge
+					{ 
+						pointOnFace = false;
+						bool pointOnVertex0 = (pA - e0).length2() < distToVertex*distToVertex;
+						bool pointOnVertex1 = (pA - e1).length2() < distToVertex*distToVertex;
 
-					if (isTireFr) {
-						//printf("Result: Point is on concave edge\n");
+						if (pointOnVertex0 || pointOnVertex1) 
+						{
+							// This point must be within the limits of the voronoi region of both edges which share a vertex						
+							// Project contact normal onto plane orthogonal to edge
+							btVector3 e0n = triBasis * edge.normalized();
+							btVector3 n0 = contactNormal - e0n * contactNormal.dot(e0n);
+							btScalar c0 = n0.dot(worldNormal);
+							btScalar a0 = btAcos(c0);
+
+							int k = pointOnVertex0 ? (j-1)%3 : (j+1)%3;
+							btVector3 e10, e11;
+							tm.getEdge(k, e10, e11);
+							btVector3 edge1 = e11 - e10;
+							btVector3 e1n = triBasis * edge1.normalized();
+							btVector3 n1 = contactNormal - e1n * contactNormal.dot(e1n);
+							btScalar c1 = n1.dot(worldNormal);
+							btScalar a1 = btAcos(c1);
+
+							btScalar edgeAngle1 = edgeAngles[k];
+
+							if (a0 < -edgeAngle + 0.0174 && a1 < -edgeAngle1 + 0.0174)
+							{
+								cpType = BT_CP_TYPE_VERTEX;
+
+								if (isTireFr) {
+									//printf("Result: Point on Vertex %d\n", pointOnVertex0 ? 0 : 1);
+								}
+							}
+							else if (isTireFr) {
+								//printf("Result: Point is on vertex but normal is out of its Voronoi region\n");
+							}
+						}
+						else 
+						{
+							btScalar c = contactNormal.dot(worldNormal);
+							// TODO: store the sine of the angle instead in the triangle info map or smth and get rid of this btAcos
+							btScalar a = btAcos(c);
+
+							// Add it if it's in the edge's voronoi region. Tolerance might require tunning. Small values 
+							// seem to deteriorate contact persistence.
+							if (a < -edgeAngle + 0.0174) 
+							{
+								if (isTireFr) {
+									//printf("Result: Point lies on edge with current angle %f\n", a/SIMD_PI*180);
+								}
+
+								cpType = BT_CP_TYPE_EDGE;
+							}
+							else if (isTireFr) {
+								//printf("Result: Point is on edge but normal is out of its Voronoi region\n");
+							}
+						}
 					}
+					else { // concave edge
+						pointOnFace = contactNormal.dot(worldNormal) > 0.9998;
+
+						if (isTireFr) {
+							//printf("Result: Point is on concave edge\n");
+						}
+					}
+
+					break; // no need to process other edges if this already contains the point
 				}
-
-				break; // no need to process other edges if this already contains the point
-			}
-		}
-
-		if (pointOnFace)
-		{ 
-			cpType = BT_CP_TYPE_FACE;
-
-			if (isTireFr) {
-				//printf("Result: Point on Face | margin %f\n", m_collisionMarginTriangle);
-			}
-		}
-
-		if (cpType != BT_CP_TYPE_NONE)
-		{
-			pt.m_cpType = cpType;
-
-			if (swapped) 
-			{
-				pt.m_localPointB -= localTranslation;
-			} else 
-			{
-				pt.m_localPointA -= localTranslation;
 			}
 
-			pt.m_positionWorldOnA -= translation;
-			pt.m_positionWorldOnB -= translation;
+			if (pointOnFace)
+			{ 
+				cpType = BT_CP_TYPE_FACE;
 
-			int insertIndex = originalManifold->getCacheEntry(pt);
+				if (isTireFr) {
+					//printf("Result: Point on Face | margin %f\n", m_collisionMarginTriangle);
+				}
+			}
 
-			if (insertIndex >= 0)
+			if (cpType != BT_CP_TYPE_NONE)
 			{
-				btManifoldPoint& ptCached = originalManifold->getContactPoint(insertIndex);
-				
-				// If this point is on a face, always replace. If this point is on an edge, only replace
-				// the similar point if it is on an edge or vertex. If this point is on a vertex, only
-				// replace it if it is on vertex as well. This is key to fix problems like first adding
-				// a contact to an edge on one triangle and then replacing it by a contact on a vertex on
-				// another triangle which will cause the object to penetrate the edge while standing on the
-				// other triangle's vertex.
-				if (ptCached.m_cpType == BT_CP_TYPE_NONE || 
-					(cpType == BT_CP_TYPE_FACE) ||
-					(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_EDGE) ||
-					(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_VERTEX) ||
-					(cpType == BT_CP_TYPE_VERTEX && ptCached.m_cpType == BT_CP_TYPE_VERTEX)) 
+				pt.m_cpType = cpType;
+
+				if (swapped) 
 				{
-					originalManifold->replaceContactPoint(pt,insertIndex);
+					pt.m_localPointB -= localTranslation;
+				} else 
+				{
+					pt.m_localPointA -= localTranslation;
 				}
-			} else
-			{
-				originalManifold->addManifoldPoint(pt);
+
+				pt.m_positionWorldOnA -= translation;
+				pt.m_positionWorldOnB -= translation;
+
+				int insertIndex = originalManifold->getCacheEntry(pt);
+
+				if (insertIndex >= 0)
+				{
+					btManifoldPoint& ptCached = originalManifold->getContactPoint(insertIndex);
+					
+					// If this point is on a face, always replace. If this point is on an edge, only replace
+					// the similar point if it is on an edge or vertex. If this point is on a vertex, only
+					// replace it if it is on vertex as well. This is key to fix problems like first adding
+					// a contact to an edge on one triangle and then replacing it by a contact on a vertex on
+					// another triangle which will cause the object to penetrate the edge while standing on the
+					// other triangle's vertex.
+					if (ptCached.m_cpType == BT_CP_TYPE_NONE || 
+						(cpType == BT_CP_TYPE_FACE) ||
+						(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_EDGE) ||
+						(cpType == BT_CP_TYPE_EDGE && ptCached.m_cpType == BT_CP_TYPE_VERTEX) ||
+						(cpType == BT_CP_TYPE_VERTEX && ptCached.m_cpType == BT_CP_TYPE_VERTEX)) 
+					{
+						originalManifold->replaceContactPoint(pt,insertIndex);
+					}
+				} else
+				{
+					originalManifold->addManifoldPoint(pt);
+				}
+			}
+			else if (isTireFr) {
+				//printf("No points added (!!!)\n");
 			}
 		}
-		else if (isTireFr) {
-			//printf("No points added (!!!)\n");
+	}
+	else
+	{
+		for (int i = 0; i < tempManifold->getNumContacts(); ++i)
+		{
+			btManifoldPoint& pt = tempManifold->getContactPoint(i);
+			originalManifold->addManifoldPoint(pt);
 		}
 	}
 	
