@@ -32,7 +32,6 @@ typedef btSimdScalar(*btSingleConstraintRowSolver3)(btSolverBody&, btSolverBody&
 typedef void (*btPrepareSolverConstraint)(btSolverConstraint&, btSolverBody&, btSolverBody&);
 
 extern btPrepareSolverConstraint gPrepareSolverConstraint;
-typedef btScalar (*btSingleConstraintRowSolver)(btSolverBody&, btSolverBody&, const btSolverConstraint&);
 
 struct btSISolverSingleIterationData
 {
@@ -51,6 +50,11 @@ struct btSISolverSingleIterationData
 	btSingleConstraintRowSolver& m_resolveSingleConstraintRowGeneric;
 	btSingleConstraintRowSolver& m_resolveSingleConstraintRowLowerLimit;
 	btSingleConstraintRowSolver& m_resolveSplitPenetrationImpulse;
+
+	btSingleConstraintRowSolver& m_resolveSingleConstraintRowGenericSplitSpin;
+	btSingleConstraintRowSolver3& m_resolveSingleConstraintRowGeneric3;
+	btSingleConstraintRowSolver3& m_resolveSingleConstraintRowGenericSplitSpin3;
+
 	btAlignedObjectArray<int>& m_kinematicBodyUniqueIdToSolverBodyTable;
 	int& m_fixedBodyId;
 	int& m_maxOverrideNumSolverIterations;
@@ -71,6 +75,9 @@ struct btSISolverSingleIterationData
 		btSingleConstraintRowSolver& resolveSingleConstraintRowGeneric,
 		btSingleConstraintRowSolver& resolveSingleConstraintRowLowerLimit,
 		btSingleConstraintRowSolver& resolveSplitPenetrationImpulse,
+		btSingleConstraintRowSolver& resolveSingleConstraintRowGenericSplitSpin,
+		btSingleConstraintRowSolver3& resolveSingleConstraintRowGeneric3,
+		btSingleConstraintRowSolver3& resolveSingleConstraintRowGenericSplitSpin3,
 		btAlignedObjectArray<int>& kinematicBodyUniqueIdToSolverBodyTable,
 		unsigned long& seed,
 		int& fixedBodyId,
@@ -89,6 +96,9 @@ struct btSISolverSingleIterationData
 		m_resolveSingleConstraintRowGeneric(resolveSingleConstraintRowGeneric),
 		m_resolveSingleConstraintRowLowerLimit(resolveSingleConstraintRowLowerLimit),
 		m_resolveSplitPenetrationImpulse(resolveSplitPenetrationImpulse),
+		m_resolveSingleConstraintRowGenericSplitSpin(resolveSingleConstraintRowGenericSplitSpin),
+		m_resolveSingleConstraintRowGeneric3(resolveSingleConstraintRowGeneric3),
+		m_resolveSingleConstraintRowGenericSplitSpin3(resolveSingleConstraintRowGenericSplitSpin3),
 		m_kinematicBodyUniqueIdToSolverBodyTable(kinematicBodyUniqueIdToSolverBodyTable),
 		m_fixedBodyId(fixedBodyId),
 		m_maxOverrideNumSolverIterations(maxOverrideNumSolverIterations)
@@ -251,7 +261,6 @@ public:
 	static void setupFrictionConstraintInternal(btAlignedObjectArray<btSolverBody>& tmpSolverBodyPool, btSolverConstraint& solverConstraint, const btVector3& normalAxis, int solverBodyIdA, int solverBodyIdB, btManifoldPoint& cp, const btVector3& rel_pos1, const btVector3& rel_pos2, btCollisionObject* colObj0, btCollisionObject* colObj1, btScalar relaxation, const btContactSolverInfo& infoGlobal, btScalar desiredVelocity, btScalar cfmSlip);
 	static btSolverConstraint& addFrictionConstraintInternal(btAlignedObjectArray<btSolverBody>& tmpSolverBodyPool, btConstraintArray& tmpSolverContactFrictionConstraintPool, const btVector3& normalAxis, int solverBodyIdA, int solverBodyIdB, int frictionIndex, btManifoldPoint& cp, const btVector3& rel_pos1, const btVector3& rel_pos2, btCollisionObject* colObj0, btCollisionObject* colObj1, btScalar relaxation, const btContactSolverInfo& infoGlobal, btScalar desiredVelocity = 0., btScalar cfmSlip = 0.);
 	static void setFrictionConstraintImpulseInternal(btAlignedObjectArray<btSolverBody>& tmpSolverBodyPool, btConstraintArray& tmpSolverContactFrictionConstraintPool,
-
 		btSolverConstraint& solverConstraint,
 		int solverBodyIdA, int solverBodyIdB,
 		btManifoldPoint& cp, const btContactSolverInfo& infoGlobal);
@@ -262,6 +271,7 @@ public:
 		const btTypedConstraint::btConstraintInfo1& info1,
 		int solverBodyIdA,
 		int solverBodyIdB,
+		int solverBodyIdC,
 		const btContactSolverInfo& infoGlobal);
 
 	static btScalar solveGroupCacheFriendlyFinishInternal(btSISolverSingleIterationData& siData, btCollisionObject** bodies, int numBodies, const btContactSolverInfo& infoGlobal);
@@ -335,6 +345,10 @@ public:
 
 	static btSingleConstraintRowSolver getScalarSplitPenetrationImpulseGeneric();
 	static btSingleConstraintRowSolver getSSE2SplitPenetrationImpulseGeneric();
+
+	static btSingleConstraintRowSolver getScalarConstraintRowSolverGenericSplitSpin();
+	static btSingleConstraintRowSolver3 getScalarConstraintRowSolverGeneric3();
+	static btSingleConstraintRowSolver3 getScalarConstraintRowSolverGenericSplitSpin3();
 
 	btSolverAnalyticsData m_analyticsData;
 };

@@ -17,7 +17,6 @@
 #include "../ForkLift/ForkLiftDemo.h"
 #include "../MultiThreadedDemo/MultiThreadedDemo.h"
 #include "../BasicDemo/BasicExample.h"
-#include "../NonDeterminismExample/NonDeterminismExample.h"
 #include "../Planar2D/Planar2D.h"
 #include "../Benchmarks/BenchmarkDemo.h"
 #include "../Importers/ImportObjDemo/ImportObjExample.h"

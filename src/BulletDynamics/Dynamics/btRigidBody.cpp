@@ -243,6 +243,10 @@ void btRigidBody::setMassProps(btScalar mass, const btVector3& inertia)
 void btRigidBody::updateInertiaTensor()
 {
 	m_invInertiaTensorWorld = m_worldTransform.getBasis().scaled(m_invInertiaLocal) * m_worldTransform.getBasis().transpose();
+}
+
+btVector3 btRigidBody::getLocalInertia() const
+{
 	btVector3 inertiaLocal;
 	const btVector3 inertia = m_invInertiaLocal;
 	inertiaLocal.setValue(inertia.x() != btScalar(0.0) ? btScalar(1.0) / inertia.x() : btScalar(0.0),

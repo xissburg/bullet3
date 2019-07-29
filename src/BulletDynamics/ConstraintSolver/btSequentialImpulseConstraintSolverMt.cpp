@@ -656,7 +656,7 @@ void btSequentialImpulseConstraintSolverMt::internalConvertMultipleJoints(const 
 			btSolverConstraint* currentConstraintRow = &m_tmpSolverNonContactConstraintPool[currentRow];
 			btTypedConstraint* constraint = constraints[i];
 
-			convertJoint(currentConstraintRow, constraint, info1, jointParams.m_solverBodyA, jointParams.m_solverBodyB, infoGlobal);
+			convertJoint(currentConstraintRow, constraint, info1, jointParams.m_solverBodyA, jointParams.m_solverBodyB, jointParams.m_solverBodyC, infoGlobal);
 		}
 	}
 }

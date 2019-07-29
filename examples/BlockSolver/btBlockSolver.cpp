@@ -36,6 +36,10 @@ struct btBlockSolverInternalData
 	btSingleConstraintRowSolver m_resolveSingleConstraintRowLowerLimit;
 	btSingleConstraintRowSolver m_resolveSplitPenetrationImpulse;
 
+	btSingleConstraintRowSolver m_resolveSingleConstraintRowGenericSplitSpin;
+	btSingleConstraintRowSolver3 m_resolveSingleConstraintRowGeneric3;
+	btSingleConstraintRowSolver3 m_resolveSingleConstraintRowGenericSplitSpin3;
+
 	btBlockSolverInternalData()
 		: m_btSeed2(0),
 		  m_fixedBodyId(-1),
@@ -48,7 +52,16 @@ struct btBlockSolverInternalData
 				  getScalarConstraintRowSolverLowerLimit()),
 		  m_resolveSplitPenetrationImpulse(
 			  btSequentialImpulseConstraintSolver::
-				  getScalarSplitPenetrationImpulseGeneric()) {}
+				  getScalarSplitPenetrationImpulseGeneric()),
+		  m_resolveSingleConstraintRowGenericSplitSpin(
+			  btSequentialImpulseConstraintSolver::
+				  getScalarConstraintRowSolverGenericSplitSpin()),
+		  m_resolveSingleConstraintRowGeneric3(
+			  btSequentialImpulseConstraintSolver::
+				  getScalarConstraintRowSolverGeneric3()),
+		  m_resolveSingleConstraintRowGenericSplitSpin3(
+			  btSequentialImpulseConstraintSolver::
+				  getScalarConstraintRowSolverGenericSplitSpin3()) {}
 };
 
 btBlockSolver::btBlockSolver()
@@ -83,6 +96,9 @@ btScalar btBlockSolver::solveGroupInternalBlock(
 		m_data21->m_resolveSingleConstraintRowGeneric,
 		m_data21->m_resolveSingleConstraintRowLowerLimit,
 		m_data21->m_resolveSplitPenetrationImpulse,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin,
+		m_data21->m_resolveSingleConstraintRowGeneric3,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin3,
 		m_data21->m_kinematicBodyUniqueIdToSolverBodyTable, m_data21->m_btSeed2,
 		m_data21->m_fixedBodyId, m_data21->m_maxOverrideNumSolverIterations);
 
@@ -98,6 +114,9 @@ btScalar btBlockSolver::solveGroupInternalBlock(
 		m_data22->m_resolveSingleConstraintRowGeneric,
 		m_data22->m_resolveSingleConstraintRowLowerLimit,
 		m_data22->m_resolveSplitPenetrationImpulse,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin,
+		m_data21->m_resolveSingleConstraintRowGeneric3,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin3,
 		m_data22->m_kinematicBodyUniqueIdToSolverBodyTable, m_data22->m_btSeed2,
 		m_data22->m_fixedBodyId, m_data22->m_maxOverrideNumSolverIterations);
 
@@ -262,6 +281,9 @@ btScalar btBlockSolver::solveGroupInternal(
 		m_data21->m_resolveSingleConstraintRowGeneric,
 		m_data21->m_resolveSingleConstraintRowLowerLimit,
 		m_data21->m_resolveSplitPenetrationImpulse,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin,
+		m_data21->m_resolveSingleConstraintRowGeneric3,
+		m_data21->m_resolveSingleConstraintRowGenericSplitSpin3,
 		m_data21->m_kinematicBodyUniqueIdToSolverBodyTable, m_data21->m_btSeed2,
 		m_data21->m_fixedBodyId, m_data21->m_maxOverrideNumSolverIterations);
 

@@ -71,7 +71,7 @@ void btSliderConstraint::initParams()
 
 	m_useOffsetForConstraintFrame = USE_OFFSET_FOR_CONSTANT_FRAME;
 
-	calculateTransforms(m_rbA.getCenterOfMassTransform(), m_rbB.getCenterOfMassTransform());
+	calculateTransforms(m_rbA->getCenterOfMassTransform(), m_rbB->getCenterOfMassTransform());
 }
 
 btSliderConstraint::btSliderConstraint(btRigidBody& rbA, btRigidBody& rbB, const btTransform& frameInA, const btTransform& frameInB, bool useLinearReferenceFrameA)
@@ -92,7 +92,7 @@ btSliderConstraint::btSliderConstraint(btRigidBody& rbB, const btTransform& fram
 {
 	///not providing rigidbody A means implicitly using worldspace for body A
 	m_frameInA = rbB.getCenterOfMassTransform() * m_frameInB;
-	//	m_frameInA.getOrigin() = m_rbA.getCenterOfMassTransform()(m_frameInA.getOrigin());
+	//	m_frameInA.getOrigin() = m_rbA->getCenterOfMassTransform()(m_frameInA.getOrigin());
 
 	initParams();
 }
@@ -109,7 +109,7 @@ void btSliderConstraint::getInfo1(btConstraintInfo1* info)
 		info->m_numConstraintRows = 4;  // Fixed 2 linear + 2 angular
 		info->nub = 2;
 		//prepare constraint
-		calculateTransforms(m_rbA.getCenterOfMassTransform(), m_rbB.getCenterOfMassTransform());
+		calculateTransforms(m_rbA->getCenterOfMassTransform(), m_rbB->getCenterOfMassTransform());
 		testAngLimits();
 		testLinLimits();
 		if (getSolveLinLimit() || getPoweredLinMotor())
@@ -133,7 +133,7 @@ void btSliderConstraint::getInfo1NonVirtual(btConstraintInfo1* info)
 
 void btSliderConstraint::getInfo2(btConstraintInfo2* info)
 {
-	getInfo2NonVirtual(info, m_rbA.getCenterOfMassTransform(), m_rbB.getCenterOfMassTransform(), m_rbA.getLinearVelocity(), m_rbB.getLinearVelocity(), m_rbA.getInvMass(), m_rbB.getInvMass());
+	getInfo2NonVirtual(info, m_rbA->getCenterOfMassTransform(), m_rbB->getCenterOfMassTransform(), m_rbA->getLinearVelocity(), m_rbB->getLinearVelocity(), m_rbA->getInvMass(), m_rbB->getInvMass());
 }
 
 void btSliderConstraint::calculateTransforms(const btTransform& transA, const btTransform& transB)

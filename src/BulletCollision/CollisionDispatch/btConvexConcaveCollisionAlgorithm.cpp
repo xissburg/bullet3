@@ -102,7 +102,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 		m_dispatchInfoPtr->m_debugDraw->drawLine(tr(triangle[2]),tr(triangle[0]),color);
 	}
 #endif
-<<<<<<< HEAD
 	
 	if (!m_convexBodyWrap->getCollisionShape()->isConvex())
 	{
@@ -205,20 +204,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 	if (isTireFr) {
 		if (tempManifold->getNumContacts() == 0) {
 			//printf("No points.. o_o\n");
-=======
-
-	if (m_convexBodyWrap->getCollisionShape()->isConvex())
-	{
-		btTriangleShape tm(triangle[0], triangle[1], triangle[2]);
-		tm.setMargin(m_collisionMarginTriangle);
-
-		btCollisionObjectWrapper triObWrap(m_triBodyWrap, &tm, m_triBodyWrap->getCollisionObject(), m_triBodyWrap->getWorldTransform(), partId, triangleIndex);  //correct transform?
-		btCollisionAlgorithm* colAlgo = 0;
-
-		if (m_resultOut->m_closestPointDistanceThreshold > 0)
-		{
-			colAlgo = ci.m_dispatcher1->findAlgorithm(m_convexBodyWrap, &triObWrap, 0, BT_CLOSEST_POINT_ALGORITHMS);
->>>>>>> master
 		}
 		else if (tempManifold->getNumContacts() != 1) {
 			//printf("More than one point.. :O\n");
@@ -237,7 +222,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 		// Check if point lies in the voronoi region of edges or vertices
 		for (int j = 0; j < 3; ++j) 
 		{
-<<<<<<< HEAD
 			btVector3 e0, e1;
 			tm.getEdge(j, e0, e1);
 			btVector3 edge = e1 - e0;
@@ -358,26 +342,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 		}
 
 		if (cpType != BT_CP_TYPE_NONE)
-=======
-			tmpWrap = m_resultOut->getBody0Wrap();
-			m_resultOut->setBody0Wrap(&triObWrap);
-			m_resultOut->setShapeIdentifiersA(partId, triangleIndex);
-		}
-		else
-		{
-			tmpWrap = m_resultOut->getBody1Wrap();
-			m_resultOut->setBody1Wrap(&triObWrap);
-			m_resultOut->setShapeIdentifiersB(partId, triangleIndex);
-		}
-
-		colAlgo->processCollision(m_convexBodyWrap, &triObWrap, *m_dispatchInfoPtr, m_resultOut);
-
-		if (m_resultOut->getBody0Internal() == m_triBodyWrap->getCollisionObject())
-		{
-			m_resultOut->setBody0Wrap(tmpWrap);
-		}
-		else
->>>>>>> master
 		{
 			pt.m_cpType = cpType;
 
@@ -389,7 +353,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 				pt.m_localPointA -= localTranslation;
 			}
 
-<<<<<<< HEAD
 			pt.m_positionWorldOnA -= translation;
 			pt.m_positionWorldOnB -= translation;
 
@@ -438,11 +401,6 @@ void btConvexTriangleCallback::processTriangle(btVector3* triangle, int partId, 
 	colAlgo->~btCollisionAlgorithm();
 	m_dispatcher->freeCollisionAlgorithm(colAlgo);
 
-=======
-		colAlgo->~btCollisionAlgorithm();
-		ci.m_dispatcher1->freeCollisionAlgorithm(colAlgo);
-	}
->>>>>>> master
 }
 
 void btConvexTriangleCallback::setTimeStepAndCounters(btScalar collisionMarginTriangle, const btDispatcherInfo& dispatchInfo, const btCollisionObjectWrapper* convexBodyWrap, const btCollisionObjectWrapper* triBodyWrap, btManifoldResult* resultOut)
@@ -550,7 +508,6 @@ void btConvexConcaveCollisionAlgorithm::processCollision(const btCollisionObject
 			if (convexBodyWrap->getCollisionShape()->isConvex())
 			{
 				btScalar collisionMarginTriangle = concaveShape->getMargin();
-<<<<<<< HEAD
 
 				bool isTireFR = convexBodyWrap->getCollisionObject()->getUserIndex() == 99135 && convexBodyWrap->m_index == 0;
 				if (isTireFR) {
@@ -599,16 +556,6 @@ void btConvexConcaveCollisionAlgorithm::processCollision(const btCollisionObject
 
 				m_dispatcher->releaseManifold(tempManifold);
 
-=======
-
-				resultOut->setPersistentManifold(m_btConvexTriangleCallback.m_manifoldPtr);
-				m_btConvexTriangleCallback.setTimeStepAndCounters(collisionMarginTriangle, dispatchInfo, convexBodyWrap, triBodyWrap, resultOut);
-
-				m_btConvexTriangleCallback.m_manifoldPtr->setBodies(convexBodyWrap->getCollisionObject(), triBodyWrap->getCollisionObject());
-
-				concaveShape->processAllTriangles(&m_btConvexTriangleCallback, m_btConvexTriangleCallback.getAabbMin(), m_btConvexTriangleCallback.getAabbMax());
-
->>>>>>> master
 				resultOut->refreshContactPoints();
 
 				m_btConvexTriangleCallback.clearWrapperData();

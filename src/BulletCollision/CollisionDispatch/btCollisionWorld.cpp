@@ -63,6 +63,7 @@ subject to the following restrictions:
 #include "BulletCollision/CollisionShapes/btTriangleCallback.h"
 #include "BulletCollision/CollisionShapes/btTriangleMeshShape.h"
 #include "BulletCollision/CollisionShapes/btStaticPlaneShape.h"
+#include "BulletCollision/CollisionShapes/btSphereSegmentShape.h"
 
 btCollisionWorld::btCollisionWorld(btDispatcher* dispatcher, btBroadphaseInterface* pairCache, btCollisionConfiguration* collisionConfiguration)
 	: m_dispatcher1(dispatcher),

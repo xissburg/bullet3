@@ -714,7 +714,7 @@ void btDiscreteDynamicsWorld::solveConstraints(btContactSolverInfo& solverInfo)
 {
 	BT_PROFILE("solveConstraints");
 
-	m_sortedConstraints.resize(m_constraints.size());
+	m_sortedConstraints.clear();
 	int i;
 	for (i = 0; i < getNumConstraints(); i++)
 	{
