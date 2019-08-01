@@ -32,7 +32,6 @@ inline int btGetVersion()
 	return BT_BULLET_VERSION;
 }
 
-
 // The following macro "BT_NOT_EMPTY_FILE" can be put into a file
 // in order suppress the MS Visual C++ Linker warning 4221
 //
@@ -44,15 +43,18 @@ inline int btGetVersion()
 //
 // see more https://stackoverflow.com/questions/1822887/what-is-the-best-way-to-eliminate-ms-visual-c-linker-warning-warning-lnk422
 
-#if defined (_MSC_VER)
-	#define BT_NOT_EMPTY_FILE_CAT_II(p, res) res
-	#define BT_NOT_EMPTY_FILE_CAT_I(a, b) BT_NOT_EMPTY_FILE_CAT_II(~, a ## b)
-	#define BT_NOT_EMPTY_FILE_CAT(a, b) BT_NOT_EMPTY_FILE_CAT_I(a, b)
-	#define BT_NOT_EMPTY_FILE namespace { char BT_NOT_EMPTY_FILE_CAT(NoEmptyFileDummy, __COUNTER__); }
+#if defined(_MSC_VER)
+#define BT_NOT_EMPTY_FILE_CAT_II(p, res) res
+#define BT_NOT_EMPTY_FILE_CAT_I(a, b) BT_NOT_EMPTY_FILE_CAT_II(~, a##b)
+#define BT_NOT_EMPTY_FILE_CAT(a, b) BT_NOT_EMPTY_FILE_CAT_I(a, b)
+#define BT_NOT_EMPTY_FILE                                      \
+	namespace                                                  \
+	{                                                          \
+	char BT_NOT_EMPTY_FILE_CAT(NoEmptyFileDummy, __COUNTER__); \
+	}
 #else
-	#define BT_NOT_EMPTY_FILE 
+#define BT_NOT_EMPTY_FILE
 #endif
-
 
 // clang and most formatting tools don't support indentation of preprocessor guards, so turn it off
 // clang-format off
@@ -61,7 +63,12 @@ inline int btGetVersion()
 #endif
 
 #ifdef _WIN32
-	#if defined(__MINGW32__) || defined(__CYGWIN__) || (defined (_MSC_VER) && _MSC_VER < 1300)
+	#if  defined(__GNUC__)	// it should handle both MINGW and CYGWIN
+        	#define SIMD_FORCE_INLINE        __inline__ __attribute__((always_inline))
+        	#define ATTRIBUTE_ALIGNED16(a)   a __attribute__((aligned(16)))
+        	#define ATTRIBUTE_ALIGNED64(a)   a __attribute__((aligned(64)))
+        	#define ATTRIBUTE_ALIGNED128(a)  a __attribute__((aligned(128)))
+    	#elif ( defined(_MSC_VER) && _MSC_VER < 1300 )
 		#define SIMD_FORCE_INLINE inline
 		#define ATTRIBUTE_ALIGNED16(a) a
 		#define ATTRIBUTE_ALIGNED64(a) a
@@ -122,7 +129,7 @@ inline int btGetVersion()
 	#ifdef BT_DEBUG
 		#ifdef _MSC_VER
 			#include <stdio.h>
-			#define btAssert(x) { if(!(x)){printf("Assert "__FILE__ ":%u (%s)\n", __LINE__, #x);__debugbreak();	}}
+			#define btAssert(x) { if(!(x)){printf("Assert " __FILE__ ":%u (%s)\n", __LINE__, #x);__debugbreak();	}}
 		#else//_MSC_VER
 			#include <assert.h>
 			#define btAssert assert
@@ -150,7 +157,7 @@ inline int btGetVersion()
 			#ifdef __SPU__
 				#include <spu_printf.h>
 				#define printf spu_printf
-				#define btAssert(x) {if(!(x)){printf("Assert "__FILE__ ":%u ("#x")\n", __LINE__);spu_hcmpeq(0,0);}}
+				#define btAssert(x) {if(!(x)){printf("Assert " __FILE__ ":%u ("#x")\n", __LINE__);spu_hcmpeq(0,0);}}
 			#else
 				#define btAssert assert
 			#endif

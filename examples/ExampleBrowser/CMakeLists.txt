@@ -71,6 +71,11 @@ IF (BUILD_SHARED_LIBS)
 	ENDIF(WIN32)
 ENDIF(BUILD_SHARED_LIBS)
 
+INSTALL(TARGETS BulletExampleBrowserLib
+        RUNTIME DESTINATION bin
+        LIBRARY DESTINATION lib${LIB_SUFFIX}
+        ARCHIVE DESTINATION lib${LIB_SUFFIX})
+
 ####################
 #
 # Bullet Example Browser main app
@@ -88,6 +93,9 @@ INCLUDE_DIRECTORIES(
 LINK_LIBRARIES(
         BulletExampleBrowserLib Bullet3Common BulletSoftBody BulletDynamics BulletCollision BulletInverseDynamicsUtils BulletInverseDynamics LinearMath OpenGLWindow gwen BussIK
 )
+
+
+add_definitions(-DINCLUDE_CLOTH_DEMOS)
 
 IF (WIN32)
 	INCLUDE_DIRECTORIES(
@@ -139,12 +147,19 @@ SET(ExtendedTutorialsSources
 )
 
 SET(BulletExampleBrowser_SRCS
+        ../BulletRobotics/FixJointBoxes.cpp
+
+        ../BulletRobotics/BoxStack.cpp
+        ../BulletRobotics/JointLimit.cpp
+        # ../BulletRobotics/GraspBox.cpp
 
 	../TinyRenderer/geometry.cpp
 	../TinyRenderer/model.cpp
 	../TinyRenderer/tgaimage.cpp
 	../TinyRenderer/our_gl.cpp
 	../TinyRenderer/TinyRenderer.cpp
+	../SharedMemory/plugins/collisionFilterPlugin/collisionFilterPlugin.cpp
+	../SharedMemory/plugins/collisionFilterPlugin/collisionFilterPlugin.h
 	../SharedMemory/plugins/pdControlPlugin/pdControlPlugin.cpp
 	../SharedMemory/plugins/pdControlPlugin/pdControlPlugin.h
 	../SharedMemory/plugins/tinyRendererPlugin/tinyRendererPlugin.cpp
@@ -156,6 +171,14 @@ SET(BulletExampleBrowser_SRCS
 	../SharedMemory/PhysicsClientSharedMemory_C_API.cpp
 	../SharedMemory/PhysicsClient.cpp
 	../SharedMemory/PhysicsClientC_API.cpp
+	../SharedMemory/GraphicsServerExample.cpp
+	../SharedMemory/GraphicsClientExample.cpp
+	../SharedMemory/RemoteGUIHelper.cpp
+	../SharedMemory/GraphicsServerExample.h
+	../SharedMemory/GraphicsClientExample.h
+	../SharedMemory/RemoteGUIHelper.h
+	../SharedMemory/GraphicsSharedMemoryCommands.h
+	../SharedMemory/GraphicsSharedMemoryPublic.h
 	../SharedMemory/PhysicsServerExample.cpp
 	../SharedMemory/PhysicsServerExampleBullet2.cpp
 	../SharedMemory/PhysicsClientExample.cpp
@@ -185,8 +208,6 @@ SET(BulletExampleBrowser_SRCS
 	../RobotSimulator/b3RobotSimulatorClientAPI.h
 	../BasicDemo/BasicExample.cpp
 	../BasicDemo/BasicExample.h
-	../NonDeterminismExample/NonDeterminismExample.cpp
-	../NonDeterminismExample/NonDeterminismExample.h
 	../InverseDynamics/InverseDynamicsExample.cpp
 	../InverseDynamics/InverseDynamicsExample.h
 	../InverseKinematics/InverseKinematicsExample.cpp
@@ -197,6 +218,14 @@ SET(BulletExampleBrowser_SRCS
 	../MultiThreadedDemo/MultiThreadedDemo.h
 	../MultiThreadedDemo/CommonRigidBodyMTBase.cpp
 	../MultiThreadedDemo/CommonRigidBodyMTBase.h
+	../Heightfield/HeightfieldExample.cpp
+	../Heightfield/HeightfieldExample.h
+	../BlockSolver/btBlockSolver.cpp
+	../BlockSolver/btBlockSolver.h
+	../BlockSolver/BlockSolverExample.cpp
+	../BlockSolver/BlockSolverExample.h
+	../BlockSolver/RigidBodyBoxes.cpp
+	../BlockSolver/RigidBodyBoxes.h
 	../Tutorial/Tutorial.cpp
 	../Tutorial/Tutorial.h
 	../Tutorial/Dof6ConstraintTutorial.cpp
@@ -328,6 +357,8 @@ SET(BulletExampleBrowser_SRCS
   ../MultiBody/InvertedPendulumPDControl.cpp
   ../MultiBody/InvertedPendulumPDControl.h
  ../MultiBody/MultiBodyConstraintFeedback.cpp
+  ../SoftDemo/SoftDemo.cpp
+  ../SoftDemo/SoftDemo.h
   ../MultiBody/MultiDofDemo.cpp
   ../MultiBody/MultiDofDemo.h
   ../RigidBody/RigidBodySoftContact.cpp
@@ -343,7 +374,7 @@ SET(BulletExampleBrowser_SRCS
 
 	../ThirdPartyLibs/stb_image/stb_image.cpp
 	../ThirdPartyLibs/stb_image/stb_image.h
-
+	../ThirdPartyLibs/stb_image/stb_image_write.cpp
 	../ThirdPartyLibs/Wavefront/tiny_obj_loader.cpp
 	
 	../ThirdPartyLibs/tinyxml2/tinyxml2.cpp

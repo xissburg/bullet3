@@ -66,6 +66,7 @@ SET(BulletCollision_SRCS
 	CollisionShapes/btScaledBvhTriangleMeshShape.cpp
 	CollisionShapes/btSdfCollisionShape.cpp
 	CollisionShapes/btShapeHull.cpp
+	CollisionShapes/btSphereSegmentShape.cpp
 	CollisionShapes/btSphereShape.cpp
 	CollisionShapes/btStaticPlaneShape.cpp
 	CollisionShapes/btStridingMeshInterface.cpp
@@ -180,6 +181,7 @@ SET(CollisionShapes_HDRS
 	CollisionShapes/btPolyhedralConvexShape.h
 	CollisionShapes/btScaledBvhTriangleMeshShape.h
 	CollisionShapes/btShapeHull.h
+	CollisionShapes/btSphereSegmentShape.cpp
 	CollisionShapes/btSphereShape.h
 	CollisionShapes/btStaticPlaneShape.h
 	CollisionShapes/btStridingMeshInterface.h

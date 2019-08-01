@@ -407,6 +407,8 @@ int Mac_createWindow(struct MacOpenGLWindowInternalData* m_internalData,struct M
  
     // OpenGL init!
     [m_internalData->m_myview MakeContext : ci->m_openglVersion];
+	
+    [m_internalData->m_myview drawRect: frame];
     
     // https://developer.apple.com/library/mac/#documentation/GraphicsAnimation/Conceptual/HighResolutionOSX/CapturingScreenContents/CapturingScreenContents.html#//apple_ref/doc/uid/TP40012302-CH10-SW1
     //support HighResolutionOSX for Retina Macbook
@@ -483,8 +485,8 @@ int Mac_createWindow(struct MacOpenGLWindowInternalData* m_internalData,struct M
     [m_internalData->m_myApp finishLaunching];
     [pool release];
     
-    if(!gladLoadGL()) {
-        printf("gladLoadGL failed!\n");
+    if(!gladLoaderLoadGL()) {
+        printf("gladLoaderLoadGL failed!\n");
         exit(-1);
     }
     

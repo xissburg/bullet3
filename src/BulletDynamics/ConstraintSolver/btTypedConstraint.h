@@ -16,27 +16,25 @@ subject to the following restrictions:
 #ifndef BT_TYPED_CONSTRAINT_H
 #define BT_TYPED_CONSTRAINT_H
 
-
 #include "LinearMath/btScalar.h"
 #include "btSolverConstraint.h"
 #include "BulletDynamics/Dynamics/btRigidBody.h"
 #include "LinearMath/btHashMap.h"
 
 #ifdef BT_USE_DOUBLE_PRECISION
-#define btTypedConstraintData2		btTypedConstraintDoubleData
-#define btTypedConstraintDataName	"btTypedConstraintDoubleData"
+#define btTypedConstraintData2 btTypedConstraintDoubleData
+#define btTypedConstraintDataName "btTypedConstraintDoubleData"
 #else
-#define btTypedConstraintData2 		btTypedConstraintFloatData
-#define btTypedConstraintDataName  "btTypedConstraintFloatData"
-#endif //BT_USE_DOUBLE_PRECISION
-
+#define btTypedConstraintData2 btTypedConstraintFloatData
+#define btTypedConstraintDataName "btTypedConstraintFloatData"
+#endif  //BT_USE_DOUBLE_PRECISION
 
 class btSerializer;
 
 //Don't change any of the existing enum values, so add enum types at the end for serialization compatibility
 enum btTypedConstraintType
 {
-	POINT2POINT_CONSTRAINT_TYPE=3,
+	POINT2POINT_CONSTRAINT_TYPE = 3,
 	HINGE_CONSTRAINT_TYPE,
 	CONETWIST_CONSTRAINT_TYPE,
 	D6_CONSTRAINT_TYPE,
@@ -49,93 +47,91 @@ enum btTypedConstraintType
 	MAX_CONSTRAINT_TYPE
 };
 
-
 enum btConstraintParams
 {
-	BT_CONSTRAINT_ERP=1,
+	BT_CONSTRAINT_ERP = 1,
 	BT_CONSTRAINT_STOP_ERP,
 	BT_CONSTRAINT_CFM,
 	BT_CONSTRAINT_STOP_CFM
 };
 
 #if 1
-	#define btAssertConstrParams(_par) btAssert(_par)
+#define btAssertConstrParams(_par) btAssert(_par)
 #else
-	#define btAssertConstrParams(_par)
+#define btAssertConstrParams(_par)
 #endif
 
-
-ATTRIBUTE_ALIGNED16(struct)	btJointFeedback
+ATTRIBUTE_ALIGNED16(struct)
+btJointFeedback
 {
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	btVector3	m_appliedForceBodyA;
-	btVector3	m_appliedTorqueBodyA;
-	btVector3	m_appliedForceBodyB;
-	btVector3	m_appliedTorqueBodyB;
+	btVector3 m_appliedForceBodyA;
+	btVector3 m_appliedTorqueBodyA;
+	btVector3 m_appliedForceBodyB;
+	btVector3 m_appliedTorqueBodyB;
 };
 
-
 ///TypedConstraint is the baseclass for Bullet constraints and vehicles
-ATTRIBUTE_ALIGNED16(class) btTypedConstraint : public btTypedObject
+ATTRIBUTE_ALIGNED16(class)
+btTypedConstraint : public btTypedObject
 {
-	int	m_userConstraintType;
+	int m_userConstraintType;
 
-	union
-	{
-		int	m_userConstraintId;
+	union {
+		int m_userConstraintId;
 		void* m_userConstraintPtr;
 	};
 
-	btScalar	m_breakingImpulseThreshold;
-	bool		m_isEnabled;
-	bool		m_needsFeedback;
-	int			m_overrideNumSolverIterations;
-	int			m_sortIndex; // used to keep the relative order of constraints when sorting them in btDiscreteDynamicsWorld
+	btScalar m_breakingImpulseThreshold;
+	bool m_isEnabled;
+	bool m_needsFeedback;
+	int m_overrideNumSolverIterations;
+	int	m_sortIndex; // used to keep the relative order of constraints when sorting them in btDiscreteDynamicsWorld
 
-	btTypedConstraint&	operator=(btTypedConstraint&	other)
+	btTypedConstraint& operator=(btTypedConstraint& other)
 	{
 		btAssert(0);
-		(void) other;
+		(void)other;
 		return *this;
 	}
 
 protected:
-	btRigidBody*	m_rbA;
-	btRigidBody*	m_rbB;
-	btRigidBody*	m_rbC;
+	btRigidBody* m_rbA;
+	btRigidBody* m_rbB;
+	btRigidBody* m_rbC;
 	btHashMap<btHashInt, btScalar>	m_appliedImpulseMap; // maps a constraint row to its last applied impulse
-	btScalar	m_dbgDrawSize;
-	btJointFeedback*	m_jointFeedback;
+	btScalar m_dbgDrawSize;
+	btJointFeedback* m_jointFeedback;
 
 	///internal method used by the constraint solver, don't use them directly
 	btScalar getMotorFactor(btScalar pos, btScalar lowLim, btScalar uppLim, btScalar vel, btScalar timeFact);
 
-
 public:
-
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
-	virtual ~btTypedConstraint() {};
-	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA);
-	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA,btRigidBody& rbB);
-	btTypedConstraint(btTypedConstraintType type, btRigidBody& rbA,btRigidBody& rbB,btRigidBody& rbC);
+	virtual ~btTypedConstraint(){};
+	btTypedConstraint(btTypedConstraintType type, btRigidBody & rbA);
+	btTypedConstraint(btTypedConstraintType type, btRigidBody & rbA, btRigidBody & rbB);
+	btTypedConstraint(btTypedConstraintType type, btRigidBody & rbA, btRigidBody & rbB, btRigidBody & rbC);
 
-	struct btConstraintInfo1 {
-		int m_numConstraintRows,nub;
+	struct btConstraintInfo1
+	{
+		int m_numConstraintRows, nub;
 	};
 
 	static btRigidBody& getFixedBody();
 
-	struct btConstraintInfo2 {
+	struct btConstraintInfo2
+	{
 		// integrator parameters: frames per second (1/stepsize), default error
 		// reduction parameter (0..1).
-		btScalar fps,erp;
+		btScalar fps, erp;
 
 		// for the first and second body, pointers to two (linear and angular)
 		// n*3 jacobian sub matrices, stored by rows. these matrices will have
 		// been initialized to 0 on entry. if the second body is zero then the
 		// J2xx pointers may be 0.
-		btScalar *m_J1linearAxis,*m_J1angularAxis,*m_J2linearAxis,*m_J2angularAxis,*m_J3linearAxis,*m_J3angularAxis;
+		btScalar *m_J1linearAxis, *m_J1angularAxis, *m_J2linearAxis, *m_J2angularAxis, *m_J3linearAxis, *m_J3angularAxis;
 
 		// elements to jump from one row to the next in J's
 		int rowskip;
@@ -143,22 +139,22 @@ public:
 		// right hand sides of the equation J*v = c + cfm * lambda. cfm is the
 		// "constraint force mixing" vector. c is set to zero on entry, cfm is
 		// set to a constant value (typically very small or zero) value on entry.
-		btScalar *m_constraintError,*cfm;
+		btScalar *m_constraintError, *cfm;
 
 		// lo and hi limits for variables (set to -/+ infinity on entry).
-		btScalar *m_lowerLimit,*m_upperLimit;
+		btScalar *m_lowerLimit, *m_upperLimit;
 
 		// number of solver iterations
 		int m_numIterations;
 
 		//damping of the velocity
-		btScalar	m_damping;
+		btScalar m_damping;
 		
 		int *m_index;
 		int *m_flags;
 	};
 
-	int	getOverrideNumSolverIterations() const
+	int getOverrideNumSolverIterations() const
 	{
 		return m_overrideNumSolverIterations;
 	}
@@ -171,31 +167,31 @@ public:
 	}
 
 	///internal method used by the constraint solver, don't use them directly
-	virtual void	buildJacobian() {};
+	virtual void buildJacobian(){};
 
 	///internal method used by the constraint solver, don't use them directly
-	virtual	void	setupSolverConstraint(btConstraintArray& ca, int solverBodyA,int solverBodyB,int solverBodyC, btScalar timeStep)
+	virtual void setupSolverConstraint(btConstraintArray & ca, int solverBodyA, int solverBodyB, int solverBodyC, btScalar timeStep)
 	{
-        (void)ca;
-        (void)solverBodyA;
-        (void)solverBodyB;
+		(void)ca;
+		(void)solverBodyA;
+		(void)solverBodyB;
 		(void)solverBodyC;
-        (void)timeStep;
+		(void)timeStep;
 	}
 
 	///internal method used by the constraint solver, don't use them directly
-	virtual void getInfo1 (btConstraintInfo1* info)=0;
+	virtual void getInfo1(btConstraintInfo1 * info) = 0;
 
 	///internal method used by the constraint solver, don't use them directly
-	virtual void getInfo2 (btConstraintInfo2* info)=0;
+	virtual void getInfo2(btConstraintInfo2 * info) = 0;
 
 	///internal method used by the constraint solver, don't use them directly
-	void	internalSetAppliedImpulse(btScalar appliedImpulse, int index = 0)
+	void internalSetAppliedImpulse(btScalar appliedImpulse, int index = 0)
 	{
 		m_appliedImpulseMap.insert(index, appliedImpulse);
 	}
 	///internal method used by the constraint solver, don't use them directly
-	btScalar	internalGetAppliedImpulse(int index = 0)
+	btScalar internalGetAppliedImpulse(int index = 0)
 	{
 		btScalar* impulse = m_appliedImpulseMap.find(index);
 
@@ -208,31 +204,28 @@ public:
 		return 0;
 	}
 
-
-	btScalar	getBreakingImpulseThreshold() const
+	btScalar getBreakingImpulseThreshold() const
 	{
-		return 	m_breakingImpulseThreshold;
+		return m_breakingImpulseThreshold;
 	}
 
-	void	setBreakingImpulseThreshold(btScalar threshold)
+	void setBreakingImpulseThreshold(btScalar threshold)
 	{
 		m_breakingImpulseThreshold = threshold;
 	}
 
-	bool	isEnabled() const
+	bool isEnabled() const
 	{
 		return m_isEnabled;
 	}
 
-	void	setEnabled(bool enabled)
+	void setEnabled(bool enabled)
 	{
-		m_isEnabled=enabled;
+		m_isEnabled = enabled;
 	}
 
-
 	///internal method used by the constraint solver, don't use them directly
-	virtual	void	solveConstraintObsolete(btSolverBody& /*bodyA*/,btSolverBody& /*bodyB*/,btScalar	/*timeStep*/) {};
-
+	virtual void solveConstraintObsolete(btSolverBody& /*bodyA*/, btSolverBody& /*bodyB*/, btScalar /*timeStep*/){};
 
 	const btRigidBody& getRigidBodyA() const
 	{
@@ -262,15 +255,15 @@ public:
 
 	int getUserConstraintType() const
 	{
-		return m_userConstraintType ;
+		return m_userConstraintType;
 	}
 
-	void	setUserConstraintType(int userConstraintType)
+	void setUserConstraintType(int userConstraintType)
 	{
 		m_userConstraintType = userConstraintType;
 	};
 
-	void	setUserConstraintId(int uid)
+	void setUserConstraintId(int uid)
 	{
 		m_userConstraintId = uid;
 	}
@@ -280,17 +273,17 @@ public:
 		return m_userConstraintId;
 	}
 
-	void	setUserConstraintPtr(void* ptr)
+	void setUserConstraintPtr(void* ptr)
 	{
 		m_userConstraintPtr = ptr;
 	}
 
-	void*	getUserConstraintPtr()
+	void* getUserConstraintPtr()
 	{
 		return m_userConstraintPtr;
 	}
 
-	void	setJointFeedback(btJointFeedback* jointFeedback)
+	void setJointFeedback(btJointFeedback * jointFeedback)
 	{
 		m_jointFeedback = jointFeedback;
 	}
@@ -305,33 +298,32 @@ public:
 		return m_jointFeedback;
 	}
 
-
 	int getUid() const
 	{
 		return m_userConstraintId;
 	}
 
-	bool	needsFeedback() const
+	bool needsFeedback() const
 	{
 		return m_needsFeedback;
 	}
 
 	///enableFeedback will allow to read the applied linear and angular impulse
 	///use getAppliedImpulse, getAppliedLinearImpulse and getAppliedAngularImpulse to read feedback information
-	void	enableFeedback(bool needsFeedback)
+	void enableFeedback(bool needsFeedback)
 	{
 		m_needsFeedback = needsFeedback;
 	}
 
 	///getAppliedImpulse is an estimated total applied impulse.
 	///This feedback could be used to determine breaking constraints or playing sounds.
-	btScalar	getAppliedImpulse(int index = 0)
+	btScalar getAppliedImpulse(int index = 0)
 	{
 		btAssert(m_needsFeedback);
 		return internalGetAppliedImpulse(index);
 	}
 
-	btTypedConstraintType getConstraintType () const
+	btTypedConstraintType getConstraintType() const
 	{
 		return btTypedConstraintType(m_objectType);
 	}
@@ -357,33 +349,32 @@ public:
 
 	///override the default global value of a parameter (such as ERP or CFM), optionally provide the axis (0..5).
 	///If no axis is provided, it uses the default axis for this constraint.
-	virtual	void	setParam(int num, btScalar value, int axis = -1) = 0;
+	virtual void setParam(int num, btScalar value, int axis = -1) = 0;
 
 	///return the local value of parameter
-	virtual	btScalar getParam(int num, int axis = -1) const = 0;
+	virtual btScalar getParam(int num, int axis = -1) const = 0;
 
-	virtual	int	calculateSerializeBufferSize() const;
+	virtual int calculateSerializeBufferSize() const;
 
 	///fills the dataBuffer and returns the struct name (and 0 on failure)
-	virtual	const char*	serialize(void* dataBuffer, btSerializer* serializer) const;
-
+	virtual const char* serialize(void* dataBuffer, btSerializer* serializer) const;
 };
 
 // returns angle in range [-SIMD_2_PI, SIMD_2_PI], closest to one of the limits
 // all arguments should be normalized angles (i.e. in range [-SIMD_PI, SIMD_PI])
 SIMD_FORCE_INLINE btScalar btAdjustAngleToLimits(btScalar angleInRadians, btScalar angleLowerLimitInRadians, btScalar angleUpperLimitInRadians)
 {
-	if(angleLowerLimitInRadians >= angleUpperLimitInRadians)
+	if (angleLowerLimitInRadians >= angleUpperLimitInRadians)
 	{
 		return angleInRadians;
 	}
-	else if(angleInRadians < angleLowerLimitInRadians)
+	else if (angleInRadians < angleLowerLimitInRadians)
 	{
 		btScalar diffLo = btFabs(btNormalizeAngle(angleLowerLimitInRadians - angleInRadians));
 		btScalar diffHi = btFabs(btNormalizeAngle(angleUpperLimitInRadians - angleInRadians));
 		return (diffLo < diffHi) ? angleInRadians : (angleInRadians + SIMD_2_PI);
 	}
-	else if(angleInRadians > angleUpperLimitInRadians)
+	else if (angleInRadians > angleUpperLimitInRadians)
 	{
 		btScalar diffHi = btFabs(btNormalizeAngle(angleInRadians - angleUpperLimitInRadians));
 		btScalar diffLo = btFabs(btNormalizeAngle(angleInRadians - angleLowerLimitInRadians));
@@ -394,6 +385,8 @@ SIMD_FORCE_INLINE btScalar btAdjustAngleToLimits(btScalar angleInRadians, btScal
 		return angleInRadians;
 	}
 }
+
+// clang-format off
 
 ///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
 struct	btTypedConstraintFloatData
@@ -417,6 +410,8 @@ struct	btTypedConstraintFloatData
 	int		m_isEnabled;
 
 };
+
+
 
 ///do not change those serialization structures, it requires an updated sBulletDNAstr/sBulletDNAstr64
 
@@ -469,13 +464,12 @@ struct	btTypedConstraintDoubleData
 
 };
 
+// clang-format on
 
-SIMD_FORCE_INLINE	int	btTypedConstraint::calculateSerializeBufferSize() const
+SIMD_FORCE_INLINE int btTypedConstraint::calculateSerializeBufferSize() const
 {
 	return sizeof(btTypedConstraintData2);
 }
-
-
 
 class btAngularLimit
 {
@@ -495,15 +489,16 @@ private:
 public:
 	/// Default constructor initializes limit as inactive, allowing free constraint movement
 	btAngularLimit()
-		:m_center(0.0f),
-		m_halfRange(-1.0f),
-		m_softness(0.9f),
-		m_biasFactor(0.3f),
-		m_relaxationFactor(1.0f),
-		m_correction(0.0f),
-		m_sign(0.0f),
-		m_solveLimit(false)
-	{}
+		: m_center(0.0f),
+		  m_halfRange(-1.0f),
+		  m_softness(0.9f),
+		  m_biasFactor(0.3f),
+		  m_relaxationFactor(1.0f),
+		  m_correction(0.0f),
+		  m_sign(0.0f),
+		  m_solveLimit(false)
+	{
+	}
 
 	/// Sets all limit's parameters.
 	/// When low > high limit becomes inactive.
@@ -566,9 +561,6 @@ public:
 	btScalar getLow() const;
 
 	btScalar getHigh() const;
-
 };
 
-
-
-#endif //BT_TYPED_CONSTRAINT_H
+#endif  //BT_TYPED_CONSTRAINT_H
