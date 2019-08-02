@@ -134,7 +134,7 @@ public:
 		btScalar *m_J1linearAxis, *m_J1angularAxis, *m_J2linearAxis, *m_J2angularAxis, *m_J3linearAxis, *m_J3angularAxis;
 
 		// elements to jump from one row to the next in J's
-		int rowskip;
+		btSolverConstraint::IntegerType rowskip;
 
 		// right hand sides of the equation J*v = c + cfm * lambda. cfm is the
 		// "constraint force mixing" vector. c is set to zero on entry, cfm is
@@ -145,13 +145,13 @@ public:
 		btScalar *m_lowerLimit, *m_upperLimit;
 
 		// number of solver iterations
-		int m_numIterations;
+		btSolverConstraint::IntegerType m_numIterations;
 
 		//damping of the velocity
 		btScalar m_damping;
 		
-		int *m_index;
-		int *m_flags;
+		btSolverConstraint::IntegerType *m_index;
+		btSolverConstraint::IntegerType *m_flags;
 	};
 
 	int getOverrideNumSolverIterations() const

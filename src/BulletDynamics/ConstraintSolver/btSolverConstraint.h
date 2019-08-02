@@ -36,6 +36,14 @@ enum btConstraintFlags
 ATTRIBUTE_ALIGNED16(struct)
 btSolverConstraint
 {
+	// Use an integer type that's the same size as btScalar because of the way btConstraintInfo2 works with its
+	// `rowskip` thing. It's expected that the size of btConstraintInfo2 is a multiple of the size of btScalar.
+#ifdef BT_USE_DOUBLE_PRECISION
+	typedef int64_t IntegerType;
+#else 
+	typedef int32_t IntegerType;
+#endif
+
 	BT_DECLARE_ALIGNED_ALLOCATOR();
 
 	btVector3 m_relpos1CrossNormal;
@@ -65,14 +73,14 @@ btSolverConstraint
 	union {
 		void* m_originalContactPoint;
 		btScalar m_unusedPadding4;
-		int m_numRowsForNonContactConstraint;
+		IntegerType m_numRowsForNonContactConstraint;
 	};
 
-	int m_overrideNumSolverIterations;
-	int m_frictionIndex;
-	int m_solverBodyIdA;
-	int m_solverBodyIdB;
-	int m_solverBodyIdC;
+	IntegerType m_overrideNumSolverIterations;
+	IntegerType m_frictionIndex;
+	IntegerType m_solverBodyIdA;
+	IntegerType m_solverBodyIdB;
+	IntegerType m_solverBodyIdC;
 
 	enum btSolverConstraintType
 	{
@@ -80,7 +88,7 @@ btSolverConstraint
 		BT_SOLVER_FRICTION_1D
 	};
 
-	int m_flags;
+	IntegerType m_flags;
 };
 
 typedef btAlignedObjectArray<btSolverConstraint> btConstraintArray;
