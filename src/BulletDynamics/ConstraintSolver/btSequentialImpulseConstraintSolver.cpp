@@ -108,7 +108,7 @@ static btSimdScalar gResolveSingleConstraintRowGeneric3_scalar_reference(btSolve
 	bodyB.internalApplyImpulse(c.m_contactNormal2*bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 	bodyC.internalApplyImpulse(c.m_contactNormal3*bodyC.internalGetInvMass(), c.m_angularComponentC, deltaImpulse);
 
-	return deltaImpulse;
+	return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_scalar_reference(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
@@ -154,7 +154,7 @@ static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_scalar_reference
 		bodyB.internalApplyImpulse(c.m_contactNormal2*bodyB.internalGetInvMass(), c.m_angularComponentB, deltaImpulse);
 	}
 
-	return deltaImpulse;
+	return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 
@@ -212,7 +212,7 @@ static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin3_scalar_referenc
 		bodyC.internalApplyImpulse(c.m_contactNormal3*bodyC.internalGetInvMass(), c.m_angularComponentC, deltaImpulse);
 	}
 
-	return deltaImpulse;
+	return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 static btSimdScalar gResolveSingleConstraintRowLowerLimit_scalar_reference(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
@@ -399,7 +399,7 @@ static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin_sse2(btSolverBod
 		bodyB.m_deltaAngularVelocity.mVec128 = _mm_add_ps(bodyB.m_deltaAngularVelocity.mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
 	}
 
-	return deltaImpulse;
+	return deltaImpulse.m_floats[0] * (1. / c.m_jacDiagABInv);
 }
 
 static btSimdScalar gResolveSingleConstraintRowGeneric3_sse2(btSolverBody& bodyA, btSolverBody& bodyB, btSolverBody& bodyC, const btSolverConstraint& c)
@@ -434,7 +434,7 @@ static btSimdScalar gResolveSingleConstraintRowGeneric3_sse2(btSolverBody& bodyA
 	bodyB.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyB.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentB.mVec128, impulseMagnitude));
 	bodyC.internalGetDeltaLinearVelocity().mVec128  = _mm_add_ps(bodyC.internalGetDeltaLinearVelocity().mVec128,  _mm_mul_ps(linearComponentC, impulseMagnitude));
 	bodyC.internalGetDeltaAngularVelocity().mVec128 = _mm_add_ps(bodyC.internalGetDeltaAngularVelocity().mVec128, _mm_mul_ps(c.m_angularComponentC.mVec128, impulseMagnitude));
-	return deltaImpulse;
+	return deltaImpulse.m_floats[0] * (1. / c.m_jacDiagABInv);
 }
 
 static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin3_sse2(btSolverBody& bodyA, btSolverBody& bodyB, btSolverBody& bodyC, const btSolverConstraint& c)
@@ -509,7 +509,7 @@ static btSimdScalar gResolveSingleConstraintRowGenericSplitSpin3_sse2(btSolverBo
 		bodyC.m_deltaAngularVelocity.mVec128 = _mm_add_ps(bodyC.m_deltaAngularVelocity.mVec128, _mm_mul_ps(c.m_angularComponentC.mVec128, impulseMagnitude));
 	}
 
-	return deltaImpulse;
+	return deltaImpulse.m_floats[0] * (1. / c.m_jacDiagABInv);
 }
 
 static btSimdScalar gResolveSingleConstraintRowLowerLimit_sse2(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
@@ -637,7 +637,7 @@ static btScalar gResolveSplitPenetrationImpulse_scalar_reference(
 		bodyA.internalApplyPushImpulse(c.m_contactNormal1 * bodyA.internalGetInvMass(), c.m_angularComponentA,deltaImpulse);
 		bodyB.internalApplyPushImpulse(c.m_contactNormal2 * bodyB.internalGetInvMass(), c.m_angularComponentB,deltaImpulse);
 	}
-	return deltaImpulse;
+	return deltaImpulse * (1. / c.m_jacDiagABInv);
 }
 
 static btScalar gResolveSplitPenetrationImpulse_sse2(btSolverBody& bodyA, btSolverBody& bodyB, const btSolverConstraint& c)
@@ -2535,7 +2535,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIterationInternal(btSIS
 
 			if (gPrepareSolverConstraint)
 			{
-				gPrepareSolverConstraint(constraint, bodyA, bodyB);
+				gPrepareSolverConstraint(*this, constraint, bodyA, bodyB);
 			}
 
 			if (constraint.m_flags & 
@@ -2689,7 +2689,7 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIteration(int iteration
 		m_fixedBodyId,
 		m_maxOverrideNumSolverIterations);
 
-	btScalar leastSquaresResidual = btSequentialImpulseConstraintSolver::solveSingleIterationInternal(siData,
+	btScalar leastSquaresResidual = solveSingleIterationInternal(siData,
 		iteration, constraints, numConstraints, infoGlobal);
 	return leastSquaresResidual;
 }

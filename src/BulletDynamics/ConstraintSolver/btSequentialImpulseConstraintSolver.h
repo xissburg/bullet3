@@ -29,7 +29,7 @@ class btCollisionObject;
 
 typedef btSimdScalar(*btSingleConstraintRowSolver)(btSolverBody&, btSolverBody&, const btSolverConstraint&);
 typedef btSimdScalar(*btSingleConstraintRowSolver3)(btSolverBody&, btSolverBody&, btSolverBody&, const btSolverConstraint&);
-typedef void (*btPrepareSolverConstraint)(btSolverConstraint&, btSolverBody&, btSolverBody&);
+typedef void (*btPrepareSolverConstraint)(btConstraintSolver&, btSolverConstraint&, btSolverBody&, btSolverBody&);
 
 extern btPrepareSolverConstraint gPrepareSolverConstraint;
 
@@ -246,7 +246,7 @@ public:
 
 	virtual btScalar solveGroup(btCollisionObject * *bodies, int numBodies, btPersistentManifold** manifold, int numManifolds, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& info, btIDebugDraw* debugDrawer, btDispatcher* dispatcher);
 
-	static btScalar solveSingleIterationInternal(btSISolverSingleIterationData& siData, int iteration, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal);
+	btScalar solveSingleIterationInternal(btSISolverSingleIterationData& siData, int iteration, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal);
 	static void convertBodiesInternal(btSISolverSingleIterationData& siData, btCollisionObject** bodies, int numBodies, const btContactSolverInfo& infoGlobal);
 	static void convertJointsInternal(btSISolverSingleIterationData& siData, btTypedConstraint** constraints, int numConstraints, const btContactSolverInfo& infoGlobal);
 	static void convertContactInternal(btSISolverSingleIterationData& siData, btPersistentManifold * manifold, const btContactSolverInfo& infoGlobal);
