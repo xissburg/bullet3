@@ -67,6 +67,8 @@ class btRigidBody : public btCollisionObject
 
 	bool m_useSplitSpin;
 	btScalar m_spinAngle;
+	btScalar m_accumulatedSpinAngle;
+	long m_spinCount;
 
 	btVector3 m_gravity;
 	btVector3 m_gravity_acceleration;
@@ -400,10 +402,7 @@ public:
 		m_spin = spin;
 	}
 
-	inline void integrateSpin(btScalar timeStep)
-	{
-		m_spinAngle = btNormalizeAngle(m_spinAngle + m_spin * timeStep);
-	}
+	void integrateSpin(btScalar timeStep);
 
 	inline btScalar getSpinAngle() const
 	{
@@ -413,6 +412,11 @@ public:
 	inline void setSpinAngle(btScalar spinAngle)
 	{
 		m_spinAngle = spinAngle;
+	}
+
+	inline long getSpinCount() const
+	{
+		return m_spinCount;
 	}
 
 	btVector3 getVelocityInLocalPoint(const btVector3& rel_pos) const

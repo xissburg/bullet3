@@ -78,6 +78,8 @@ void btRigidBody::setupRigidBody(const btRigidBody::btRigidBodyConstructionInfo&
 	m_interpolationLinearVelocity.setValue(0, 0, 0);
 	m_interpolationAngularVelocity.setValue(0, 0, 0);
 	m_spinAngle = 0;
+	m_accumulatedSpinAngle = 0;
+	m_spinCount = 0;
 	
 	//moved to btCollisionObject
 	m_friction = constructionInfo.m_friction;
@@ -378,6 +380,16 @@ void btRigidBody::integrateVelocities(btScalar step)
 	{
 		m_angularVelocity *= (MAX_ANGVEL / step) / angvel;
 	}
+}
+
+void btRigidBody::integrateSpin(btScalar timeStep)
+{
+	btScalar angleDelta = m_spin * timeStep;
+	btScalar accumulatedAngle = m_accumulatedSpinAngle + angleDelta;
+	long spinCount = floor(accumulatedAngle / SIMD_2_PI);
+	m_spinCount += spinCount;
+	m_accumulatedSpinAngle = accumulatedAngle - spinCount * SIMD_2_PI;
+	m_spinAngle = btNormalizeAngle(m_spinAngle + angleDelta);
 }
 
 btQuaternion btRigidBody::getOrientation() const
