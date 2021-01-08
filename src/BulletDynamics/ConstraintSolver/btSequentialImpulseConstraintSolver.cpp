@@ -826,27 +826,43 @@ int btSequentialImpulseConstraintSolver::btRandInt2a(int n, unsigned long& seed)
 	const unsigned long un = static_cast<unsigned long>(n);
 	unsigned long r = btSequentialImpulseConstraintSolver::btRand2a(seed);
 
-	// note: probably more aggressive than it needs to be -- might be
-	//       able to get away without one or two of the innermost branches.
-	if (un <= 0x00010000UL)
+	btRigidBody* rb = collisionObject? btRigidBody::upcast(collisionObject) : 0;
+
+	solverBody->internalGetDeltaLinearVelocity().setValue(0.f,0.f,0.f);
+	solverBody->internalGetDeltaAngularVelocity().setValue(0.f,0.f,0.f);
+	solverBody->internalGetPushVelocity().setValue(0.f,0.f,0.f);
+	solverBody->internalGetTurnVelocity().setValue(0.f,0.f,0.f);
+	solverBody->m_deltaSpin = 0;
+
+	if (rb)
 	{
-		r ^= (r >> 16);
-		if (un <= 0x00000100UL)
-		{
-			r ^= (r >> 8);
-			if (un <= 0x00000010UL)
-			{
-				r ^= (r >> 4);
-				if (un <= 0x00000004UL)
-				{
-					r ^= (r >> 2);
-					if (un <= 0x00000002UL)
-					{
-						r ^= (r >> 1);
-					}
-				}
-			}
-		}
+		solverBody->m_worldTransform = rb->getWorldTransform();
+		solverBody->internalSetInvMass(btVector3(rb->getInvMass(),rb->getInvMass(),rb->getInvMass())*rb->getLinearFactor());
+		solverBody->m_originalBody = rb;
+		solverBody->m_angularFactor = rb->getAngularFactor();
+		solverBody->m_linearFactor = rb->getLinearFactor();
+		solverBody->m_linearVelocity = rb->getLinearVelocity();
+		solverBody->m_angularVelocity = rb->getAngularVelocity();
+		solverBody->m_spin = rb->getSpin();
+		solverBody->m_externalForceImpulse = rb->getTotalForce()*rb->getInvMass()*timeStep;
+		solverBody->m_externalTorqueImpulse = rb->getTotalTorque()*rb->getInvInertiaTensorWorld()*timeStep;
+		solverBody->m_externalSpinTorqueImpulse = rb->getTotalSpinTorque()*rb->getInvInertiaTensorWorld()*timeStep;
+		solverBody->m_useSplitSpin = rb->useSplitSpin();
+
+	} else
+	{
+		solverBody->m_worldTransform.setIdentity();
+		solverBody->internalSetInvMass(btVector3(0,0,0));
+		solverBody->m_originalBody = 0;
+		solverBody->m_angularFactor.setValue(1,1,1);
+		solverBody->m_linearFactor.setValue(1,1,1);
+		solverBody->m_linearVelocity.setValue(0,0,0);
+		solverBody->m_angularVelocity.setValue(0,0,0);
+		solverBody->m_spin = 0;
+		solverBody->m_externalForceImpulse.setValue(0,0,0);
+		solverBody->m_externalTorqueImpulse.setValue(0,0,0);
+		solverBody->m_externalSpinTorqueImpulse.setValue(0,0,0);
+		solverBody->m_useSplitSpin = false;
 	}
 
 	return (int)(r % un);
@@ -958,19 +974,19 @@ void btSequentialImpulseConstraintSolver::setupFrictionConstraintInternal(btAlig
 
 		if (bodyA) {
 			if (solverBodyA.m_useSplitSpin) {
-				angularVelocityA = solverBodyA.getAngularVelocityWithSpin();
+				angularVelocityA = solverBodyA.getAngularVelocityWithSpin()+solverBodyA.m_externalTorqueImpulse+solverBodyA.m_externalSpinTorqueImpulse;
 			}
 			else {
-				angularVelocityA = solverBodyA.m_angularVelocity;
+				angularVelocityA = solverBodyA.m_angularVelocity+solverBodyA.m_externalTorqueImpulse;
 			}
 		}
 
 		if (bodyB) {
 			if (solverBodyB.m_useSplitSpin) {
-				angularVelocityB = solverBodyB.getAngularVelocityWithSpin();
+				angularVelocityB = solverBodyB.getAngularVelocityWithSpin()+solverBodyB.m_externalTorqueImpulse+solverBodyB.m_externalSpinTorqueImpulse;
 			}
 			else {
-				angularVelocityB = solverBodyB.m_angularVelocity;
+				angularVelocityB = solverBodyB.m_angularVelocity+solverBodyB.m_externalTorqueImpulse;
 			}
 		}
 
@@ -1078,19 +1094,19 @@ void btSequentialImpulseConstraintSolver::setupTorsionalFrictionConstraintIntern
 
 		if (bodyA) {
 			if (solverBodyA.m_useSplitSpin) {
-				angularVelocityA = solverBodyA.getAngularVelocityWithSpin();
+				angularVelocityA = solverBodyA.getAngularVelocityWithSpin()+solverBodyA.m_externalTorqueImpulse+solverBodyA.m_externalSpinTorqueImpulse;
 			}
 			else {
-				angularVelocityA = solverBodyA.m_angularVelocity;
+				angularVelocityA = solverBodyA.m_angularVelocity+solverBodyA.m_externalTorqueImpulse;
 			}
 		}
 
 		if (bodyB) {
 			if (solverBodyB.m_useSplitSpin) {
-				angularVelocityB = solverBodyB.getAngularVelocityWithSpin();
+				angularVelocityB = solverBodyB.getAngularVelocityWithSpin()+solverBodyB.m_externalTorqueImpulse+solverBodyB.m_externalSpinTorqueImpulse;
 			}
 			else {
-				angularVelocityB = solverBodyB.m_angularVelocity;
+				angularVelocityB = solverBodyB.m_angularVelocity+solverBodyB.m_externalTorqueImpulse;
 			}
 		}
 
@@ -2117,19 +2133,22 @@ void btSequentialImpulseConstraintSolver::convertJointInternal(btAlignedObjectAr
 			bool useSplitSpinC = (solverConstraint.m_flags & BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_C) && bodyCPtr->m_useSplitSpin;
 
 			if (useSplitSpinA) {
-				angularVelocityA = rbA.getAngularVelocityWithSpin() + externalTorqueImpulseA;
+				btVector3 externalSpinTorqueImpulse = bodyAPtr->m_originalBody ? bodyAPtr->m_externalSpinTorqueImpulse : btVector3(0,0,0);
+				angularVelocityA = rbA.getAngularVelocityWithSpin()+externalTorqueImpulseA+externalSpinTorqueImpulse;
 			} else {
 				angularVelocityA = rbA.getAngularVelocity() + externalTorqueImpulseA;
 			}
 
 			if (useSplitSpinB) {
-				angularVelocityB = rbB.getAngularVelocityWithSpin() + externalTorqueImpulseB;
+				btVector3 externalSpinTorqueImpulse = bodyBPtr->m_originalBody ? bodyBPtr->m_externalSpinTorqueImpulse : btVector3(0,0,0);
+				angularVelocityB = rbB.getAngularVelocityWithSpin()+externalTorqueImpulseB+externalSpinTorqueImpulse;
 			} else {
 				angularVelocityB = rbB.getAngularVelocity() + externalTorqueImpulseB;
 			}
 
 			if (useSplitSpinC) {
-				angularVelocityC = rbC.getAngularVelocityWithSpin() + externalTorqueImpulseC;
+				btVector3 externalSpinTorqueImpulse = bodyCPtr->m_originalBody ? bodyCPtr->m_externalSpinTorqueImpulse : btVector3(0,0,0);
+				angularVelocityC = rbC.getAngularVelocityWithSpin()+externalTorqueImpulseC+externalSpinTorqueImpulse;
 			} else {
 				angularVelocityC = rbC.getAngularVelocity() + externalTorqueImpulseC;
 			}
@@ -2538,7 +2557,21 @@ btScalar btSequentialImpulseConstraintSolver::solveSingleIterationInternal(btSIS
 				gPrepareSolverConstraint(*this, constraint, bodyA, bodyB);
 			}
 
-			if (constraint.m_flags & 
+			/*btTypedConstraint* typedConstraint = (btTypedConstraint*)constraint.m_originalContactPoint;
+			
+			if (typedConstraint->getObjectType() == MAX_CONSTRAINT_TYPE+3) {
+				btScalar previousImpulse = constraint.m_lowerLimit;
+				btScalar deltaImpulse = constraint.m_upperLimit;
+				constraint.m_appliedImpulse = deltaImpulse;
+				constraint.m_lowerLimit = deltaImpulse;
+
+				bodyA.internalApplyImpulseWithSpinSplit(constraint.m_contactNormal1*bodyA.internalGetInvMass(), constraint.m_angularComponentA, -previousImpulse);
+				bodyB.internalApplyImpulseWithSpinSplit(constraint.m_contactNormal2*bodyB.internalGetInvMass(), constraint.m_angularComponentB, -previousImpulse);
+				
+				bodyA.internalApplyImpulseWithSpinSplit(constraint.m_contactNormal1*bodyA.internalGetInvMass(), constraint.m_angularComponentA, deltaImpulse);
+				bodyB.internalApplyImpulseWithSpinSplit(constraint.m_contactNormal2*bodyB.internalGetInvMass(), constraint.m_angularComponentB, deltaImpulse);
+			}
+			else */if (constraint.m_flags & 
 			    (BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_A | BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_B | BT_CONSTRAINT_USE_SPLIT_SPIN_BODY_C)) {
 				residual = siData.m_resolveSingleConstraintRowGenericSplitSpin3(bodyA, bodyB, bodyC, constraint);
 			}
@@ -2876,7 +2909,11 @@ void btSequentialImpulseConstraintSolver::writeBackBodiesInternal(btAlignedObjec
 				tmpSolverBodyPool[i].m_angularVelocity +
 				tmpSolverBodyPool[i].m_externalTorqueImpulse);
 
-			tmpSolverBodyPool[i].m_originalBody->setSpin(tmpSolverBodyPool[i].m_spin);
+			btVector3 xAxis = m_tmpSolverBodyPool[i].getWorldTransform().getBasis().getColumn(0);
+			btScalar externalSpinTorqueImpulse = xAxis.dot(m_tmpSolverBodyPool[i].m_externalSpinTorqueImpulse);
+			m_tmpSolverBodyPool[i].m_originalBody->setSpin(
+				btScalar(m_tmpSolverBodyPool[i].m_spin)+
+				externalSpinTorqueImpulse);
 
 			if (infoGlobal.m_splitImpulse)
 				tmpSolverBodyPool[i].m_originalBody->setWorldTransform(tmpSolverBodyPool[i].m_worldTransform);

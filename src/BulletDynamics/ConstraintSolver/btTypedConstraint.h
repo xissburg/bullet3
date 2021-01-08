@@ -191,16 +191,15 @@ public:
 		m_appliedImpulseMap.insert(index, appliedImpulse);
 	}
 	///internal method used by the constraint solver, don't use them directly
-	btScalar internalGetAppliedImpulse(int index = 0)
+	btScalar internalGetAppliedImpulse(int index = 0) const
 	{
-		btScalar* impulse = m_appliedImpulseMap.find(index);
+		const btScalar* impulse = m_appliedImpulseMap.find(index);
 
 		if (impulse) 
 		{
 			return *impulse;
 		}
 
-		m_appliedImpulseMap.insert(index, 0);
 		return 0;
 	}
 
@@ -317,7 +316,11 @@ public:
 
 	///getAppliedImpulse is an estimated total applied impulse.
 	///This feedback could be used to determine breaking constraints or playing sounds.
+<<<<<<< Updated upstream
 	btScalar getAppliedImpulse(int index = 0)
+=======
+	btScalar	getAppliedImpulse(int index = 0) const
+>>>>>>> Stashed changes
 	{
 		btAssert(m_needsFeedback);
 		return internalGetAppliedImpulse(index);

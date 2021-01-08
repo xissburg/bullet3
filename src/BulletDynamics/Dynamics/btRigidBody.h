@@ -58,35 +58,36 @@ enum btRigidBodyFlags
 ///Deactivated (sleeping) rigid bodies don't take any processing time, except a minor broadphase collision detection impact (to allow active objects to activate/wake up sleeping objects)
 class btRigidBody : public btCollisionObject
 {
-	btMatrix3x3 m_invInertiaTensorWorld;
-	btVector3 m_linearVelocity;
-	btVector3 m_angularVelocity;
-	btScalar m_spin;
-	btScalar m_inverseMass;
-	btVector3 m_linearFactor;
 
-	bool m_useSplitSpin;
-	btScalar m_spinAngle;
-	btScalar m_accumulatedSpinAngle;
-	long m_spinCount;
+	btMatrix3x3	m_invInertiaTensorWorld;
+	btVector3		m_linearVelocity;
+	btVector3		m_angularVelocity;
+	btScalar		m_spin;
+	btScalar		m_inverseMass;
+	btVector3		m_linearFactor;
 
-	btVector3 m_gravity;
-	btVector3 m_gravity_acceleration;
-	btVector3 m_invInertiaLocal;
-	btVector3 m_totalForce;
-	btVector3 m_totalTorque;
+	bool			m_useSplitSpin;
+	btScalar		m_spinAngle;
 
-	btScalar m_linearDamping;
-	btScalar m_angularDamping;
+	btVector3		m_gravity;
+	btVector3		m_gravity_acceleration;
+	btVector3		m_invInertiaLocal;
+	btVector3		m_totalForce;
+	btVector3		m_totalTorque;
+	btScalar		m_totalSpinTorque;
 
-	bool m_additionalDamping;
-	btScalar m_additionalDampingFactor;
-	btScalar m_additionalLinearDampingThresholdSqr;
-	btScalar m_additionalAngularDampingThresholdSqr;
-	btScalar m_additionalAngularDampingFactor;
+	btScalar		m_linearDamping;
+	btScalar		m_angularDamping;
 
-	btScalar m_linearSleepingThreshold;
-	btScalar m_angularSleepingThreshold;
+	bool			m_additionalDamping;
+	btScalar		m_additionalDampingFactor;
+	btScalar		m_additionalLinearDampingThresholdSqr;
+	btScalar		m_additionalAngularDampingThresholdSqr;
+	btScalar		m_additionalAngularDampingFactor;
+
+
+	btScalar		m_linearSleepingThreshold;
+	btScalar		m_angularSleepingThreshold;
 
 	//m_optionalMotionState allows to automatic synchronize the world transform for active objects
 	btMotionState* m_optionalMotionState;
@@ -289,6 +290,12 @@ public:
 		return m_totalTorque;
 	};
 
+	const btVector3 getTotalSpinTorque() const
+	{
+		btVector3 xAxis = m_worldTransform.getBasis().getColumn(0);
+		return xAxis * m_totalSpinTorque;
+	};
+
 	const btVector3& getInvInertiaDiagLocal() const
 	{
 		return m_invInertiaLocal;
@@ -307,7 +314,22 @@ public:
 
 	void applyTorque(const btVector3& torque)
 	{
-		m_totalTorque += torque * m_angularFactor;
+		if (m_useSplitSpin) 
+		{
+			btVector3 totalTorque = torque * m_angularFactor;
+
+			// remove torque along the local x axis
+			btVector3 xAxis = m_worldTransform.getBasis().getColumn(0);
+			btScalar spinTorque = totalTorque.dot(xAxis);
+			m_totalSpinTorque += spinTorque;
+
+			totalTorque -= xAxis * spinTorque;
+			m_totalTorque += totalTorque;
+		}
+		else 
+		{
+			m_totalTorque += torque*m_angularFactor;
+		}
 	}
 
 	void applyForce(const btVector3& force, const btVector3& rel_pos)
@@ -338,10 +360,36 @@ public:
 		}
 	}
 
+	void applyTorqueImpulseWithSpin(const btVector3& torque)
+	{
+			btVector3 angularImpulse = m_invInertiaTensorWorld * torque * m_angularFactor;
+
+			// remove any impulse that'd cause the body to spin in its local x axis
+			btVector3 xAxis = m_worldTransform.getBasis().getColumn(0);
+			btScalar spinImpulse = angularImpulse.dot(xAxis);
+			m_spin += spinImpulse;
+
+			angularImpulse -= xAxis * spinImpulse;
+			m_angularVelocity += angularImpulse;
+	}
+
+	void applyImpulseWithSpin(const btVector3& impulse, const btVector3& rel_pos)
+	{
+		if (m_inverseMass != btScalar(0.))
+		{
+			applyCentralImpulse(impulse);
+			if (m_angularFactor)
+			{
+				applyTorqueImpulseWithSpin(rel_pos.cross(impulse*m_linearFactor));
+			}
+		}
+	}
+
 	void clearForces()
 	{
 		m_totalForce.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
 		m_totalTorque.setValue(btScalar(0.0), btScalar(0.0), btScalar(0.0));
+		m_totalSpinTorque = 0;
 	}
 
 	void updateInertiaTensor();

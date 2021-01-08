@@ -111,19 +111,20 @@ ATTRIBUTE_ALIGNED16(struct)
 btSolverBody
 {
 	BT_DECLARE_ALIGNED_ALLOCATOR();
-	btTransform m_worldTransform;
-	btVector3 m_deltaLinearVelocity;
-	btVector3 m_deltaAngularVelocity;
-	btVector3 m_angularFactor;
-	btVector3 m_linearFactor;
-	btVector3 m_invMass;
-	btVector3 m_pushVelocity;
-	btVector3 m_turnVelocity;
-	btVector3 m_linearVelocity;
-	btVector3 m_angularVelocity;
-	btVector3 m_externalForceImpulse;
-	btVector3 m_externalTorqueImpulse;
-	bool m_useSplitSpin;
+	btTransform		m_worldTransform;
+	btVector3		m_deltaLinearVelocity;
+	btVector3		m_deltaAngularVelocity;
+	btVector3		m_angularFactor;
+	btVector3		m_linearFactor;
+	btVector3		m_invMass;
+	btVector3		m_pushVelocity;
+	btVector3		m_turnVelocity;
+	btVector3		m_linearVelocity;
+	btVector3		m_angularVelocity;
+	btVector3		m_externalForceImpulse;
+	btVector3		m_externalTorqueImpulse;
+	btVector3		m_externalSpinTorqueImpulse;
+	bool 			m_useSplitSpin;
 
 #ifdef USE_SIMD
 	btSimdScalar m_deltaSpin;
@@ -147,7 +148,7 @@ btSolverBody
 	SIMD_FORCE_INLINE void getVelocityInLocalPointNoDelta(const btVector3& rel_pos, btVector3& velocity) const
 	{
 		if (m_originalBody)
-			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity + m_externalTorqueImpulse).cross(rel_pos);
+			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity+m_externalTorqueImpulse+m_externalSpinTorqueImpulse).cross(rel_pos);
 		else
 			velocity.setValue(0, 0, 0);
 	}
@@ -155,15 +156,26 @@ btSolverBody
 	SIMD_FORCE_INLINE void getVelocityInLocalPointNoDeltaWithSpin(const btVector3& rel_pos, btVector3& velocity ) const
 	{
 		if (m_originalBody)
-			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity + m_worldTransform.getBasis().getColumn(0)*m_spin + m_externalTorqueImpulse).cross(rel_pos);
+			velocity = m_linearVelocity + m_externalForceImpulse + (m_angularVelocity + m_worldTransform.getBasis().getColumn(0)*m_spin + m_externalTorqueImpulse + m_externalSpinTorqueImpulse).cross(rel_pos);
 		else
 			velocity.setValue(0,0,0);
 	}
 
-	SIMD_FORCE_INLINE void getVelocityInLocalPointObsolete(const btVector3& rel_pos, btVector3& velocity) const
+	SIMD_FORCE_INLINE void	getVelocityInLocalPointWithSpin(const btVector3& rel_pos, btVector3& velocity ) const
 	{
 		if (m_originalBody)
-			velocity = m_linearVelocity + m_deltaLinearVelocity + (m_angularVelocity + m_deltaAngularVelocity).cross(rel_pos);
+			velocity = m_linearVelocity + m_deltaLinearVelocity + m_externalForceImpulse + 
+					   (m_angularVelocity + m_deltaAngularVelocity + m_worldTransform.getBasis().getColumn(0)*(m_spin + m_deltaSpin) + m_externalTorqueImpulse + m_externalSpinTorqueImpulse).cross(rel_pos);
+		else
+			velocity.setValue(0,0,0);
+	}
+
+
+	SIMD_FORCE_INLINE void	getVelocityInLocalPoint(const btVector3& rel_pos, btVector3& velocity ) const
+	{
+		if (m_originalBody)
+			velocity = m_linearVelocity + m_deltaLinearVelocity + m_externalForceImpulse + 
+					   (m_angularVelocity + m_deltaAngularVelocity + m_externalTorqueImpulse + m_externalSpinTorqueImpulse).cross(rel_pos);
 		else
 			velocity.setValue(0, 0, 0);
 	}
@@ -175,6 +187,15 @@ btSolverBody
 		else
 			angVel.setValue(0, 0, 0);
 	}
+
+	SIMD_FORCE_INLINE void	getLinearVelocity(btVector3& linVel) const
+	{
+		if (m_originalBody)
+			linVel =m_linearVelocity+m_deltaLinearVelocity;
+		else
+			linVel.setValue(0,0,0);
+	}
+
 
 	//Optimization for the iterative solver: avoid calculating constant terms involving inertia, normal, relative position
 	SIMD_FORCE_INLINE void applyImpulse(const btVector3& linearComponent, const btVector3& angularComponent, const btScalar impulseMagnitude)
@@ -331,7 +352,7 @@ btSolverBody
 
 	btVector3 getAngularVelocityWithSpin()
 	{
-		return m_angularVelocity + m_worldTransform.getBasis().getColumn(0) * m_spin;
+		return (m_angularVelocity + m_deltaAngularVelocity) + m_worldTransform.getBasis().getColumn(0) * (m_spin + m_deltaSpin);
 	}
 
 };
